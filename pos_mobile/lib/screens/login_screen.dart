@@ -3,6 +3,9 @@ import '../theme/colors.dart';
 import '../data/shift_data.dart';
 import 'dashboard_screen.dart';
 
+// --- TAMBAHKAN IMPORT DASHBOARD ADMIN ---
+import '../admin/screens/admin_dashboard_screen.dart'; 
+
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
 
@@ -16,7 +19,6 @@ class LoginScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-
               /// LOGO
               Container(
                 width: 80,
@@ -41,13 +43,13 @@ class LoginScreen extends StatelessWidget {
               const SizedBox(height: 16),
 
               RichText(
-                text: TextSpan(
-                  style: const TextStyle(
+                text: const TextSpan(
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
                     color: PastelColors.grey,
                   ),
-                  children: const [
+                  children: [
                     TextSpan(text: 'Floo'),
                     TextSpan(text: '.'),
                     TextSpan(text: 'ID'),
@@ -75,7 +77,6 @@ class LoginScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     const Text(
                       'Welcome Back',
                       style: TextStyle(
@@ -106,7 +107,7 @@ class LoginScreen extends StatelessWidget {
                     TextField(
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.person_outline),
-                        hintText: 'cashier_01',
+                        hintText: 'admin_floo', // Hint diubah biar kerasa Admin
                         filled: true,
                         fillColor: PastelColors.mint.withOpacity(0.5),
                         border: OutlineInputBorder(
@@ -153,14 +154,14 @@ class LoginScreen extends StatelessWidget {
                       height: 56,
                       child: ElevatedButton(
                         onPressed: () {
-
-                          /// RESET SHIFT SETIAP LOGIN
+                          /// RESET SHIFT
                           shiftActive.value = false;
 
+                          // --- UBAH NAVIGASI KE ADMIN DASHBOARD ---
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const DashboardScreen(),
+                              builder: (context) => const AdminDashboardScreen(),
                             ),
                           );
                         },
@@ -181,7 +182,6 @@ class LoginScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-
                   ],
                 ),
               ),

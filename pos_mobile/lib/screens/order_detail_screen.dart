@@ -1,271 +1,186 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Tambahan untuk format angka
 import '../models/order.dart';
 import '../theme/colors.dart';
 
 class OrderDetailScreen extends StatelessWidget {
-
   final Order order;
 
-  const OrderDetailScreen({
-    super.key,
-    required this.order,
-  });
+  const OrderDetailScreen({super.key, required this.order});
+
+  String formatRupiah(int amount) {
+    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
+  }
 
   String formatDate(DateTime date) {
-    return "${date.day}/${date.month}/${date.year} - ${date.hour}:${date.minute}";
+    return DateFormat('dd/MM/yyyy - HH:mm').format(date);
   }
 
   @override
   Widget build(BuildContext context) {
-
     final items = order.items;
-
-    /// MERGE ITEM YANG SAMA
     final Map<String, Map<String, int>> mergedItems = {};
 
     for (var item in items) {
-
       String name = item["name"];
       int qty = item["qty"];
       int price = item["price"];
 
       if (mergedItems.containsKey(name)) {
-
-        mergedItems[name]!["qty"] =
-            mergedItems[name]!["qty"]! + qty;
-
+        mergedItems[name]!["qty"] = mergedItems[name]!["qty"]! + qty;
       } else {
-
-        mergedItems[name] = {
-          "qty": qty,
-          "price": price,
-        };
-
+        mergedItems[name] = {"qty": qty, "price": price};
       }
     }
 
     return Scaffold(
       backgroundColor: PastelColors.mint,
-
       appBar: AppBar(
         elevation: 0,
         backgroundColor: PastelColors.mint,
         iconTheme: const IconThemeData(color: PastelColors.grey),
-        title: const Text(
-          "Payment Details",
-          style: TextStyle(color: PastelColors.grey),
-        ),
+        title: const Text("Payment Details", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold)),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
-
-        child: Container(
-          padding: const EdgeInsets.all(16),
-
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-          ),
-
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-
-              /// PAYMENT DETAILS
-              const Text(
-                "Payment Details",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))
+                ]
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Transaction Info", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: PastelColors.grey)),
+                  const SizedBox(height: 16),
+                  _row("Transaction ID", order.id),
+                  _row("Date", formatDate(order.date)),
+                  _row("Customer", order.customer.isEmpty ? "Umum" : order.customer),
+                  _row("Payment", order.paymentMethod.toUpperCase()),
+                  
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Divider(),
+                  ),
 
-              const SizedBox(height: 12),
+                  const Text("Items Purchased", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: PastelColors.grey)),
+                  const SizedBox(height: 12),
 
-              _row("Transaction ID", order.id),
-              _row("Date", formatDate(order.date)),
-              _row(
-                "Customer",
-                order.customer.isEmpty ? "-" : order.customer,
-              ),
-              _row("Status", "Accept"),
-              _row("Payment Method", order.paymentMethod.toUpperCase()),
-
-              const Divider(height: 30),
-
-              /// TRANSACTION BREAKDOWN
-              const Text(
-                "Transaction Breakdown",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-
-              const SizedBox(height: 10),
-
-              Container(
-                padding: const EdgeInsets.all(12),
-
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-
-                child: Column(
-
-                  children: mergedItems.entries.map((entry) {
-
+                  // DAFTAR ITEM (Model Bertingkat)
+                  ...mergedItems.entries.map((entry) {
                     String name = entry.key;
                     int qty = entry.value["qty"]!;
                     int price = entry.value["price"]!;
                     int total = qty * price;
 
                     return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-
                         children: [
-
-                          /// NAMA PRODUK
+                          // Baris 1: Nama Produk (Kiri Banget)
                           Text(
                             name,
                             style: const TextStyle(
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: PastelColors.grey,
                             ),
                           ),
-
-                          const SizedBox(height: 4),
-
-                          /// QTY PRICE TOTAL
+                          const SizedBox(height: 6),
+                          // Baris 2: Detail Angka (x3      3.000      9.000)
                           Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
-
                             children: [
-
-                              Text("$qty"),
-
-                              Text("$price"),
-
-                              Text(
-                                "$total",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w500,
+                              // Qty
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  "x$qty",
+                                  style: const TextStyle(
+                                    color: PastelColors.emerald,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              // Harga Satuan
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  formatRupiah(price),
+                                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                ),
+                              ),
+                              // Total Harga per Item (Kanan Banget)
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  formatRupiah(total),
+                                  textAlign: TextAlign.right,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: PastelColors.grey,
+                                  ),
                                 ),
                               ),
                             ],
-                          )
+                          ),
                         ],
                       ),
                     );
-
                   }).toList(),
-                ),
-              ),
 
-              const SizedBox(height: 20),
+                  const Divider(height: 32),
 
-              /// SUBTOTAL
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("Subtotal"),
-                  Text("Rp ${order.subtotal}"),
-                ],
-              ),
-
-              const SizedBox(height: 6),
-
-              /// TAX
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("Tax"),
-                  Text("Rp ${order.tax}"),
-                ],
-              ),
-
-              const Divider(height: 24),
-
-              /// TOTAL
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-
-                  const Text(
-                    "Total",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-
-                  Text(
-                    "Rp ${order.total}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+                  _rowSummary("Subtotal", formatRupiah(order.subtotal)),
+                  const SizedBox(height: 6),
+                  _rowSummary("Tax (12%)", formatRupiah(order.tax)),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Total", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: PastelColors.grey)),
+                      Text(formatRupiah(order.total), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: PastelColors.emerald)),
+                    ],
                   ),
                 ],
               ),
-
-              const Spacer(),
-
-              /// FOOTER
-              Container(
-                padding: const EdgeInsets.all(12),
-
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-
-                    Text(
-                      "Order : #${order.id}",
-                      style: const TextStyle(fontSize: 12),
-                    ),
-
-                    const Text(
-                      "POS : 012",
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+            const Spacer(),
+            // FOOTER INFO
+            Text("Order Ref: #${order.id.substring(0,8)}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );
   }
 
   Widget _row(String title, String value) {
-
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
         children: [
-
-          Text(
-            title,
-            style: const TextStyle(color: Colors.grey),
-          ),
-
-          Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
+          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: PastelColors.grey)),
         ],
       ),
+    );
+  }
+
+  Widget _rowSummary(String title, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+      ],
     );
   }
 }
