@@ -1,13 +1,21 @@
 import 'package:flutter/material.dart';
 import '../theme/colors.dart';
 import '../data/shift_data.dart';
-import 'dashboard_screen.dart';
 
-// --- TAMBAHKAN IMPORT DASHBOARD ADMIN ---
-import '../admin/screens/admin_dashboard_screen.dart'; 
+// --- IMPORT DUA HALAMAN DASHBOARD ---
+import 'dashboard_screen.dart'; // Dashboard Kasir
+import '../admin/screens/admin_dashboard_screen.dart'; // Dashboard Admin
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  // Controller buat ngebaca ketikan username
+  final TextEditingController _usernameController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -79,35 +87,26 @@ class LoginScreen extends StatelessWidget {
                   children: [
                     const Text(
                       'Welcome Back',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                     ),
-
                     const Text(
                       'Please enter your credentials',
                       style: TextStyle(color: Colors.grey),
                     ),
-
                     const SizedBox(height: 32),
 
                     /// USERNAME
                     const Text(
                       'USERNAME',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
                     ),
-
                     const SizedBox(height: 8),
 
                     TextField(
+                      controller: _usernameController, // <-- Pasang controller di sini
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.person_outline),
-                        hintText: 'admin_floo', // Hint diubah biar kerasa Admin
+                        hintText: 'Ketik "admin" atau "kasir"', 
                         filled: true,
                         fillColor: PastelColors.mint.withOpacity(0.5),
                         border: OutlineInputBorder(
@@ -122,13 +121,8 @@ class LoginScreen extends StatelessWidget {
                     /// PASSWORD
                     const Text(
                       'PASSWORD',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
                     ),
-
                     const SizedBox(height: 8),
 
                     TextField(
@@ -154,32 +148,41 @@ class LoginScreen extends StatelessWidget {
                       height: 56,
                       child: ElevatedButton(
                         onPressed: () {
-                          /// RESET SHIFT
+                          // Ambil teks username dan ubah jadi huruf kecil semua biar aman
+                          String inputUsername = _usernameController.text.trim().toLowerCase();
+
+                          if (inputUsername.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Isi username dulu ges!"), backgroundColor: PastelColors.rose),
+                            );
+                            return;
+                          }
+
+                          /// RESET SHIFT SETIAP LOGIN
                           shiftActive.value = false;
 
-                          // --- UBAH NAVIGASI KE ADMIN DASHBOARD ---
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AdminDashboardScreen(),
-                            ),
-                          );
+                          // --- LOGIKA CABANG NAVIGASI ---
+                          if (inputUsername.contains('admin')) {
+                            // Kalau ngetik admin -> Masuk Dashboard Admin
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+                            );
+                          } else {
+                            // Kalau ngetik selain admin (misal kasir_01) -> Masuk Dashboard Kasir
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => const DashboardScreen()),
+                            );
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: PastelColors.emerald,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           elevation: 4,
                           shadowColor: PastelColors.emerald.withOpacity(0.4),
                         ),
-                        child: const Text(
-                          'Sign In',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: const Text('Sign In', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
