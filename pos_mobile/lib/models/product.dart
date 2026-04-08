@@ -1,15 +1,17 @@
 class Product {
+  final String id;
   final String name;
   final int price;
-  final int stock;
   final String category;
-  final String? image; 
+  final String? image;
+  final int stock;
 
   Product({
+    this.id = '', 
     required this.name,
     required this.price,
-    required this.stock,
     required this.category,
-    this.image, 
+    this.image,
+    this.stock = 0,
   });
 }

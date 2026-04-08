@@ -80,13 +80,23 @@ class ProductCard extends StatelessWidget {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: PastelColors.mint,
+                  color: PastelColors.mint.withOpacity(0.3), // Bikin warna mint-nya lebih soft kalau gambarnya transparan
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(
-                  Icons.inventory_2_outlined,
-                  size: 45,
-                  color: Colors.grey,
+                child: Center(
+                  // --- INI BAGIAN YANG DIBENERIN BIAR BISA MUNCUL GAMBAR ---
+                  child: (product.image != null && product.image!.isNotEmpty)
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Image.network(
+                            product.image!, 
+                            fit: BoxFit.cover, // Biar gambarnya menuhin kotak tanpa gepeng
+                            width: double.infinity, 
+                            height: double.infinity, 
+                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported_outlined, color: Colors.red),
+                          ),
+                        )
+                      : const Icon(Icons.inventory_2_outlined, size: 45, color: Colors.grey),
                 ),
               ),
             ),

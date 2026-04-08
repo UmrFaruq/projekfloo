@@ -1,68 +1,19 @@
 import '../models/product.dart';
 
+// Data dummy sementara biar Admin gak rewel
 List<Product> products = [
-
   Product(
+    id: 'dummy_1',
     name: "Indomie Goreng",
-    price: 3000,
-    stock: 24,
+    price: 3500,
     category: "Makanan Instan",
+    stock: 50,
   ),
-
   Product(
-    name: "Indomie Soto",
-    price: 3000,
-    stock: 20,
-    category: "Makanan Instan",
-  ),
-
-  Product(
-    name: "Aqua Botol",
-    price: 4000,
-    stock: 15,
-    category: "Minuman",
-  ),
-
-  Product(
-    name: "Teh Botol",
+    id: 'dummy_2',
+    name: "Es Teh Manis",
     price: 5000,
-    stock: 12,
     category: "Minuman",
+    stock: 20,
   ),
-
-  Product(
-    name: "Pocari Sweat",
-    price: 7000,
-    stock: 10,
-    category: "Minuman",
-  ),
-
-  Product(
-    name: "Chitato",
-    price: 9000,
-    stock: 8,
-    category: "Snack",
-  ),
-
-  Product(
-    name: "Silverqueen",
-    price: 15000,
-    stock: 6,
-    category: "Snack",
-  ),
-
-  Product(
-    name: "Beras 5kg",
-    price: 65000,
-    stock: 5,
-    category: "Sembako",
-  ),
-
-  Product(
-    name: "Minyak Goreng",
-    price: 18000,
-    stock: 7,
-    category: "Kebutuhan Rumah Tangga",
-  ),
-
 ];
