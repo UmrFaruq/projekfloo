@@ -41,7 +41,8 @@ class OrderDetailScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: PastelColors.grey),
         title: const Text("Payment Details", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold)),
       ),
-      body: Padding(
+      // --- INI SOLUSINYA BANG: PAKE SINGLECHILDSCROLLVIEW BIAR BISA DI-SCROLL ---
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -151,7 +152,10 @@ class OrderDetailScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const Spacer(),
+            
+            // --- SPACER DIGANTI SIZEDBOX BIAR GAK ERROR PAS DI-SCROLL ---
+            const SizedBox(height: 40), 
+            
             // FOOTER INFO
             Text("Order Ref: #${order.id.substring(0,8)}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 20),

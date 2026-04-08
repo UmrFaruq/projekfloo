@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // <-- IMPORT BARU UNTUK FORMATTER
 import 'package:intl/intl.dart'; // Tambahan untuk format angka bertitik
 import '../theme/colors.dart';
 import '../data/order_data.dart';
 import '../data/shift_data.dart';
+import '../data/report_helper.dart'; // <-- IMPORT PABRIK LAPORAN (BARU)
 import 'sales_screen.dart';
 import 'order_history_screen.dart';
 import 'login_screen.dart';
@@ -180,7 +182,8 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
       return;
     }
 
-    int balance = int.tryParse(openingController.text) ?? 0;
+    String cleanText = openingController.text.replaceAll('.', '');
+    int balance = int.tryParse(cleanText) ?? 0;
 
     if (balance <= 0) {
       showWarningPopup(context, "Perhatian", "Opening balance harus lebih dari 0.");
@@ -200,7 +203,6 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
   }
 
   void endShift(BuildContext context) {
-    // Tambahan dialog konfirmasi sebelum end shift
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -262,7 +264,6 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                           color: PastelColors.grey,
                         ),
                       ),
-                      // Menampilkan Waktu Start Shift
                       if (active && _shiftStartTime != null) ...[
                         const SizedBox(height: 4),
                         Text(
@@ -299,9 +300,14 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                 TextField(
                   controller: openingController,
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    CurrencyFormatInputFormatter(), 
+                  ],
                   decoration: InputDecoration(
                     labelText: "Opening Balance",
                     labelStyle: const TextStyle(color: PastelColors.grey),
+                    prefixText: "Rp ", 
                     filled: true,
                     fillColor: PastelColors.mint,
                     border: OutlineInputBorder(
@@ -319,7 +325,6 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                 crossAxisSpacing: 12,
                 childAspectRatio: 1.8,
                 children: [
-                  // Menerapkan format angka bertitik di sini
                   _stat("Opening Balance", formatRupiah(openingBalance.value)),
                   _stat("Total Revenue", formatRupiah(getRevenue())),
                   _stat("Cash Sales", formatRupiah(getCashSales())),
@@ -341,7 +346,6 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        // Warna solid dan kontras yang lebih baik
                         backgroundColor: active ? PastelColors.rose : PastelColors.emerald,
                         foregroundColor: Colors.white,
                         elevation: 0,
@@ -359,17 +363,30 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ReportsScreen(),
-                          ),
-                        );
+                      // --- INI FUNGSI BARUNYA BANG! (LANGSUNG DOWNLOAD) ---
+                      onPressed: () async {
+                        final today = DateTime.now();
+                        
+                        // Cari transaksi yang tanggalnya sama kayak hari ini
+                        final todaysOrders = allOrders.value.where((o) =>
+                            o.date.year == today.year &&
+                            o.date.month == today.month &&
+                            o.date.day == today.day
+                        ).toList();
+
+                        if (todaysOrders.isEmpty) {
+                          showWarningPopup(context, "Data Kosong", "Belum ada penjualan di hari ini.");
+                          return;
+                        }
+
+                        // Cetak Laporan!
+                        String fileName = "Laporan_Hari_Ini_${DateFormat('dd-MM-yyyy').format(today)}";
+                        await ReportHelper.downloadExcel(todaysOrders, fileName);
                       },
+                      // ---------------------------------------------------
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: PastelColors.teal, // Solid teal
-                        foregroundColor: PastelColors.grey, // Teks digelapkan (dark grey)
+                        backgroundColor: PastelColors.teal, 
+                        foregroundColor: PastelColors.grey, 
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -414,9 +431,9 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
           Text(
             value,
             style: const TextStyle(
-              fontSize: 15, // Dikecilkan sedikit agar format rupiah tidak terpotong
+              fontSize: 15, 
               fontWeight: FontWeight.bold,
-              color: PastelColors.grey, // Warna teks dipertajam
+              color: PastelColors.grey, 
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -492,13 +509,13 @@ class RecentTransactionsCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        formatRupiah(order.total), // Format angka bertitik
+                        formatRupiah(order.total), 
                         style: const TextStyle(fontWeight: FontWeight.bold, color: PastelColors.emerald),
                       )
                     ],
                   ),
                 );
-              })
+              }).toList(), 
             ],
           ),
         );
@@ -522,7 +539,7 @@ class AppDrawer extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
             decoration: const BoxDecoration(
-              color: PastelColors.emerald, // Dibuat lebih solid
+              color: PastelColors.emerald, 
             ),
             child: Row(
               children: [
@@ -643,6 +660,26 @@ class AppDrawer extends StatelessWidget {
           )
         ],
       ),
+    );
+  }
+}
+
+// --- MESIN AUTO TITIK RUPIAH ---
+class CurrencyFormatInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.selection.baseOffset == 0) return newValue;
+
+    String cleanText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanText.isEmpty) return newValue.copyWith(text: '');
+
+    final int value = int.parse(cleanText);
+    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
+    String newText = formatter.format(value).trim();
+
+    return newValue.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
     );
   }
 }

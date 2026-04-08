@@ -8,24 +8,28 @@ import '../theme/colors.dart';
 class ProductCard extends StatelessWidget {
   final Product product;
 
-  const ProductCard({
-    super.key,
-    required this.product,
-  });
+  const ProductCard({super.key, required this.product});
 
   // Fungsi format Rupiah
   String formatRupiah(int amount) {
-    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(amount);
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        // --- INI DIA JANTUNG MASALAHNYA: SEKARANG GAMBARNYA UDAH DIBAWA! ---
         cart.add(
           CartItem(
             name: product.name,
             price: product.price,
+            image: product
+                .image, // <--- INI BANG YANG BIKIN GAMBAR MUNCUL DI KERANJANG
           ),
         );
 
@@ -33,7 +37,7 @@ class ProductCard extends StatelessWidget {
 
         // Menyembunyikan snackbar sebelumnya agar tidak numpuk jika diklik cepat
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        
+
         // Memunculkan SnackBar baru yang lebih jelas dan melayang
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -44,7 +48,11 @@ class ProductCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     "${product.name} masuk keranjang",
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -70,8 +78,8 @@ class ProductCard extends StatelessWidget {
               color: Colors.black.withOpacity(0.04),
               blurRadius: 8,
               offset: const Offset(0, 4),
-            )
-          ]
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,7 +88,9 @@ class ProductCard extends StatelessWidget {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: PastelColors.mint.withOpacity(0.3), // Bikin warna mint-nya lebih soft kalau gambarnya transparan
+                  color: PastelColors.mint.withOpacity(
+                    0.3,
+                  ), // Bikin warna mint-nya lebih soft kalau gambarnya transparan
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Center(
@@ -89,14 +99,23 @@ class ProductCard extends StatelessWidget {
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(14),
                           child: Image.network(
-                            product.image!, 
-                            fit: BoxFit.cover, // Biar gambarnya menuhin kotak tanpa gepeng
-                            width: double.infinity, 
-                            height: double.infinity, 
-                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported_outlined, color: Colors.red),
+                            product.image!,
+                            fit: BoxFit
+                                .cover, // Biar gambarnya menuhin kotak tanpa gepeng
+                            width: double.infinity,
+                            height: double.infinity,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  Icons.image_not_supported_outlined,
+                                  color: Colors.red,
+                                ),
                           ),
                         )
-                      : const Icon(Icons.inventory_2_outlined, size: 45, color: Colors.grey),
+                      : const Icon(
+                          Icons.inventory_2_outlined,
+                          size: 45,
+                          color: Colors.grey,
+                        ),
                 ),
               ),
             ),
@@ -124,15 +143,17 @@ class ProductCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  formatRupiah(product.price), // Harga sudah diformat pakai titik!
+                  formatRupiah(
+                    product.price,
+                  ), // Harga sudah diformat pakai titik!
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                     color: PastelColors.emerald,
                   ),
-                )
+                ),
               ],
-            )
+            ),
           ],
         ),
       ),

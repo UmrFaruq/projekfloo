@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // <-- Import fungsi format Rupiah (titik)
 import '../data/cart_data.dart';
 import '../theme/colors.dart';
 import 'checkout_screen.dart';
@@ -11,6 +12,10 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
+  // Fungsi format Rupiah (titik otomatis)
+  String formatRupiah(int amount) {
+    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
+  }
 
   int getTotal() {
     int total = 0;
@@ -24,7 +29,6 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: PastelColors.mint,
-
       appBar: AppBar(
         elevation: 0,
         backgroundColor: PastelColors.mint,
@@ -34,7 +38,6 @@ class _CartScreenState extends State<CartScreen> {
         ),
         iconTheme: const IconThemeData(color: PastelColors.grey),
       ),
-
       body: cart.isEmpty
           ? const Center(
               child: Text(
@@ -44,39 +47,41 @@ class _CartScreenState extends State<CartScreen> {
             )
           : Column(
               children: [
-
                 /// CART LIST
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: cart.length,
                     itemBuilder: (context, index) {
-
                       final item = cart[index];
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(12),
-
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
                         ),
-
                         child: Row(
                           children: [
-
-                            /// PRODUCT IMAGE
+                            /// PRODUCT IMAGE (DIBENERIN)
                             Container(
                               width: 60,
                               height: 60,
                               decoration: BoxDecoration(
-                                color: PastelColors.mint,
+                                color: PastelColors.mint.withOpacity(0.5), // Biar kalau transparan lebih nyatu
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(
-                                Icons.fastfood,
-                                color: Colors.grey,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: (item.image != null && item.image!.isNotEmpty)
+                                    ? Image.network(
+                                        item.image!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            const Icon(Icons.image_not_supported_outlined, color: Colors.red),
+                                      )
+                                    : const Icon(Icons.fastfood, color: Colors.grey),
                               ),
                             ),
 
@@ -87,7 +92,6 @@ class _CartScreenState extends State<CartScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-
                                   Text(
                                     item.name,
                                     style: const TextStyle(
@@ -95,12 +99,12 @@ class _CartScreenState extends State<CartScreen> {
                                       fontSize: 14,
                                       color: PastelColors.grey,
                                     ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-
                                   const SizedBox(height: 4),
-
                                   Text(
-                                    "Rp ${item.price}",
+                                    formatRupiah(item.price), // <-- Format titik diaplikasikan di sini!
                                     style: const TextStyle(
                                       color: Colors.grey,
                                       fontSize: 12,
@@ -118,7 +122,6 @@ class _CartScreenState extends State<CartScreen> {
                               ),
                               child: Row(
                                 children: [
-
                                   /// MINUS
                                   IconButton(
                                     icon: const Icon(Icons.remove, size: 18),
@@ -129,19 +132,14 @@ class _CartScreenState extends State<CartScreen> {
                                         } else {
                                           cart.removeAt(index);
                                         }
-
                                         updateCart();
                                       });
                                     },
                                   ),
-
                                   Text(
                                     "${item.qty}",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
                                   ),
-
                                   /// PLUS
                                   IconButton(
                                     icon: const Icon(Icons.add, size: 18),
@@ -158,10 +156,7 @@ class _CartScreenState extends State<CartScreen> {
 
                             /// DELETE
                             IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: PastelColors.rose,
-                              ),
+                              icon: const Icon(Icons.delete_outline, color: PastelColors.rose),
                               onPressed: () {
                                 setState(() {
                                   cart.removeAt(index);
@@ -179,31 +174,21 @@ class _CartScreenState extends State<CartScreen> {
                 /// TOTAL + CHECKOUT
                 Container(
                   padding: const EdgeInsets.all(16),
-
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                   ),
-
                   child: Column(
                     children: [
-
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-
                           const Text(
                             "Total",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey,
-                            ),
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
                           ),
-
                           Text(
-                            "Rp ${getTotal()}",
+                            formatRupiah(getTotal()), // <-- Format titik total akhir!
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -212,37 +197,35 @@ class _CartScreenState extends State<CartScreen> {
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 16),
 
-                      /// CHECKOUT BUTTON
+                      /// CHECKOUT BUTTON (DIBIKIN LEBIH SOLID & GARANG)
                       SizedBox(
                         width: double.infinity,
                         height: 50,
-
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: PastelColors.sage,
+                            backgroundColor: PastelColors.emerald, // Pakai Emerald biar solid mantap!
+                            foregroundColor: Colors.white, // Teks jadi putih ngejreng
+                            elevation: 2, // Dikasih bayangan dikit biar pop-out
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
                           onPressed: () {
-
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) =>
-                                    const CheckoutScreen(),
+                                builder: (context) => const CheckoutScreen(),
                               ),
                             );
-
                           },
                           child: const Text(
                             "Checkout",
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2, // Spasi huruf dipanjangin dikit biar tegas
                             ),
                           ),
                         ),

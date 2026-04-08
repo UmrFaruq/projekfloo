@@ -9,8 +9,18 @@ import 'login_screen.dart';
 import 'order_detail_screen.dart';
 import '../data/shift_data.dart';
 
-class OrderHistoryScreen extends StatelessWidget {
+// UBAH JADI STATEFUL WIDGET BIAR BISA NGERESPON KLIK & KETIKAN
+class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
+
+  @override
+  State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
+}
+
+class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
+  // --- VARIABEL UNTUK MENYIMPAN STATUS PENCARIAN & FILTER ---
+  String searchQuery = "";
+  String selectedFilter = "Semua"; // Default ke "Semua"
 
   String formatRupiah(int amount) {
     return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
@@ -73,8 +83,14 @@ class OrderHistoryScreen extends StatelessWidget {
                     BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))
                   ]
                 ),
-                child: const TextField(
-                  decoration: InputDecoration(
+                child: TextField(
+                  // --- TAMBAHAN ONCHANGED BIAR BISA NYARI ---
+                  onChanged: (value) {
+                    setState(() {
+                      searchQuery = value.toLowerCase();
+                    });
+                  },
+                  decoration: const InputDecoration(
                     icon: Icon(Icons.search, color: Colors.grey),
                     hintText: "Search Order ID / Customer",
                     border: InputBorder.none,
@@ -85,16 +101,34 @@ class OrderHistoryScreen extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            /// FILTER (Dibuat lebih rapi)
+            /// FILTER (Udah dipasangin fungsi OnTap)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
-                children: const [
-                  Expanded(child: FilterChipCustom("Semua", isSelected: true)),
-                  SizedBox(width: 8),
-                  Expanded(child: FilterChipCustom("Cash", isSelected: false)),
-                  SizedBox(width: 8),
-                  Expanded(child: FilterChipCustom("QRIS", isSelected: false)),
+                children: [
+                  Expanded(
+                    child: FilterChipCustom(
+                      "Semua", 
+                      isSelected: selectedFilter == "Semua",
+                      onTap: () => setState(() => selectedFilter = "Semua"),
+                    )
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilterChipCustom(
+                      "Cash", 
+                      isSelected: selectedFilter == "Cash",
+                      onTap: () => setState(() => selectedFilter = "Cash"),
+                    )
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilterChipCustom(
+                      "QRIS", 
+                      isSelected: selectedFilter == "QRIS",
+                      onTap: () => setState(() => selectedFilter = "QRIS"),
+                    )
+                  ),
                 ],
               ),
             ),
@@ -128,20 +162,38 @@ class OrderHistoryScreen extends StatelessWidget {
               ),
             ),
 
-            /// ORDER LIST
+            /// ORDER LIST DENGAN LOGIKA FILTERING
             Expanded(
               child: ValueListenableBuilder<List<Order>>(
                 valueListenable: allOrders,
                 builder: (context, orders, _) {
-                  if (orders.isEmpty) {
-                    return const Center(child: Text("Belum ada transaksi", style: TextStyle(fontSize: 16, color: Colors.grey)));
+                  
+                  // --- PROSES PENYARINGAN DATA ---
+                  List<Order> filteredOrders = orders.where((order) {
+                    // 1. Cek Metode Pembayaran
+                    bool matchFilter = selectedFilter == "Semua" || 
+                                     order.paymentMethod.toLowerCase() == selectedFilter.toLowerCase();
+                    
+                    // 2. Cek Kolom Pencarian (Order ID atau Nama)
+                    bool matchSearch = searchQuery.isEmpty || 
+                                     order.id.toLowerCase().contains(searchQuery) || 
+                                     order.customer.toLowerCase().contains(searchQuery);
+
+                    return matchFilter && matchSearch;
+                  }).toList();
+
+                  // Di-reverse biar transaksi terbaru ada di paling atas
+                  filteredOrders = filteredOrders.reversed.toList();
+
+                  if (filteredOrders.isEmpty) {
+                    return const Center(child: Text("Transaksi tidak ditemukan", style: TextStyle(fontSize: 16, color: Colors.grey)));
                   }
+
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: orders.length,
+                    itemCount: filteredOrders.length,
                     itemBuilder: (context, index) {
-                      final order = orders.reversed.toList()[index]; // Balik biar yang terbaru di atas
-                      return OrderCard(order: order, formatRupiah: formatRupiah);
+                      return OrderCard(order: filteredOrders[index], formatRupiah: formatRupiah);
                     },
                   );
                 },
@@ -154,26 +206,31 @@ class OrderHistoryScreen extends StatelessWidget {
   }
 }
 
+// CLASS FILTER CHIP DIUBAH BIAR BISA DIKLIK (GestureDetector)
 class FilterChipCustom extends StatelessWidget {
   final String title;
   final bool isSelected;
+  final VoidCallback onTap; // Tambahan fungsi klik
 
-  const FilterChipCustom(this.title, {super.key, required this.isSelected});
+  const FilterChipCustom(this.title, {super.key, required this.isSelected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 40,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: isSelected ? PastelColors.emerald : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: isSelected ? Colors.white : PastelColors.grey,
+    return GestureDetector(
+      onTap: onTap, // Pasang fungsinya di sini
+      child: Container(
+        height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? PastelColors.emerald : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : PastelColors.grey,
+          ),
         ),
       ),
     );

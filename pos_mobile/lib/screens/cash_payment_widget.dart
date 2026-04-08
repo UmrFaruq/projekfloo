@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // <-- IMPORT BARU UNTUK FORMATTER
 import 'package:intl/intl.dart';
 import '../theme/colors.dart';
 import '../screens/receipt_screen.dart'; // Sesuaikan path jika receipt_screen ada di dalam folder screens
@@ -50,7 +51,9 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
   final TextEditingController cashController = TextEditingController();
 
   int getChange() {
-    int paid = int.tryParse(cashController.text) ?? 0;
+    // Hapus titik sebelum diubah jadi angka biar nggak error matematikanya
+    String cleanText = cashController.text.replaceAll('.', '');
+    int paid = int.tryParse(cleanText) ?? 0;
     return paid - widget.total;
   }
 
@@ -65,10 +68,18 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
         TextField(
           controller: cashController,
           keyboardType: TextInputType.number,
+          
+          // --- INI MESIN AUTO TITIKNYA DIPASANG ---
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            CurrencyFormatInputFormatter(), // Panggil class formatter di bawah
+          ],
+          
           decoration: InputDecoration(
             hintText: "Nominal Uang Diterima",
             hintStyle: const TextStyle(color: Colors.grey),
             prefixIcon: const Icon(Icons.payments_outlined, color: PastelColors.emerald),
+            prefixText: "Rp ", // Tambahan biar makin keren ada Rp nya langsung
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
@@ -117,7 +128,10 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
             ),
             onPressed: () {
               String customer = widget.customerController.text.trim();
-              int paidAmount = int.tryParse(cashController.text) ?? 0;
+              
+              // Hapus titik lagi sebelum dilempar ke halaman struk/database
+              String cleanText = cashController.text.replaceAll('.', '');
+              int paidAmount = int.tryParse(cleanText) ?? 0;
 
               if (customer.isEmpty) {
                 showWarningPopup(context, "Data Belum Lengkap", "Silakan masukkan nama customer terlebih dahulu.");
@@ -152,6 +166,29 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
           ),
         )
       ],
+    );
+  }
+}
+
+// --- MESIN AUTO TITIK RUPIAH ---
+class CurrencyFormatInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.selection.baseOffset == 0) return newValue;
+
+    // Bersihkan semua huruf/simbol, sisakan angkanya aja
+    String cleanText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanText.isEmpty) return newValue.copyWith(text: '');
+
+    // Format angkanya jadi ada titiknya
+    final int value = int.parse(cleanText);
+    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
+    String newText = formatter.format(value).trim();
+
+    // Balikin teks yang udah diformat ke TextField
+    return newValue.copyWith(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newText.length),
     );
   }
 }
