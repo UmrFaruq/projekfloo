@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Tambahan untuk format harga
+import 'package:intl/intl.dart';
 import '../models/product.dart';
 import '../models/cart_item.dart';
 import '../data/cart_data.dart';
@@ -10,35 +10,33 @@ class ProductCard extends StatelessWidget {
 
   const ProductCard({super.key, required this.product});
 
-  // Fungsi format Rupiah
-  String formatRupiah(int amount) {
-    return NumberFormat.currency(
-      locale: 'id_ID',
-      symbol: 'Rp ',
-      decimalDigits: 0,
-    ).format(amount);
+  // --- ANTI-VIRUS RUPIAH ---
+  String formatRupiah(dynamic amount) {
+    int finalAmount = 0; 
+    if (amount != null) {
+      if (amount is num) {
+        finalAmount = amount.toInt(); 
+      } else if (amount is String) {
+        finalAmount = int.tryParse(amount) ?? 0;
+      }
+    }
+    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(finalAmount);
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // --- INI DIA JANTUNG MASALAHNYA: SEKARANG GAMBARNYA UDAH DIBAWA! ---
         cart.add(
           CartItem(
             name: product.name,
             price: product.price,
-            image: product
-                .image, // <--- INI BANG YANG BIKIN GAMBAR MUNCUL DI KERANJANG
+            image: product.image,
           ),
         );
 
         updateCart();
-
-        // Menyembunyikan snackbar sebelumnya agar tidak numpuk jika diklik cepat
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-        // Memunculkan SnackBar baru yang lebih jelas dan melayang
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -48,38 +46,26 @@ class ProductCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     "${product.name} masuk keranjang",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.white,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
                   ),
                 ),
               ],
             ),
-            duration: const Duration(seconds: 2), // Diperlambat menjadi 2 detik
-            backgroundColor: PastelColors.emerald, // Warna lebih kontras
-            behavior: SnackBarBehavior.floating, // Dibuat melayang
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            duration: const Duration(seconds: 2),
+            backgroundColor: PastelColors.emerald,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
             elevation: 4,
           ),
         );
       },
       child: Container(
-        padding: const EdgeInsets.all(12), // Padding di dalam card ditambah
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,46 +73,27 @@ class ProductCard extends StatelessWidget {
             Expanded(
               child: Container(
                 width: double.infinity,
-                decoration: BoxDecoration(
-                  color: PastelColors.mint.withOpacity(
-                    0.3,
-                  ), // Bikin warna mint-nya lebih soft kalau gambarnya transparan
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                decoration: BoxDecoration(color: PastelColors.mint.withOpacity(0.3), borderRadius: BorderRadius.circular(14)),
                 child: Center(
-                  // --- INI BAGIAN YANG DIBENERIN BIAR BISA MUNCUL GAMBAR ---
                   child: (product.image != null && product.image!.isNotEmpty)
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(14),
                           child: Image.network(
                             product.image!,
-                            fit: BoxFit
-                                .cover, // Biar gambarnya menuhin kotak tanpa gepeng
+                            fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(
-                                  Icons.image_not_supported_outlined,
-                                  color: Colors.red,
-                                ),
+                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported_outlined, color: Colors.red),
                           ),
                         )
-                      : const Icon(
-                          Icons.inventory_2_outlined,
-                          size: 45,
-                          color: Colors.grey,
-                        ),
+                      : const Icon(Icons.inventory_2_outlined, size: 45, color: Colors.grey),
                 ),
               ),
             ),
             const SizedBox(height: 12),
             Text(
               product.name,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-                color: PastelColors.grey,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: PastelColors.grey),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -134,23 +101,11 @@ class ProductCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // PERBAIKAN: Panggil product.qty
+                Text("Stok: ${product.qty}", style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
                 Text(
-                  "Stok: ${product.stock}",
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  formatRupiah(
-                    product.price,
-                  ), // Harga sudah diformat pakai titik!
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: PastelColors.emerald,
-                  ),
+                  formatRupiah(product.price),
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: PastelColors.emerald),
                 ),
               ],
             ),

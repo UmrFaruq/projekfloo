@@ -20,23 +20,14 @@ void showWarningPopup(BuildContext context, String title, String message) {
         children: [
           const Icon(Icons.warning_amber_rounded, color: PastelColors.rose),
           const SizedBox(width: 8),
-          Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         ],
       ),
       content: Text(message, style: const TextStyle(fontSize: 14)),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text(
-            "OK",
-            style: TextStyle(
-              color: PastelColors.grey,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          child: const Text("OK", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold)),
         ),
       ],
     ),
@@ -64,16 +55,20 @@ class _SalesScreenState extends State<SalesScreen> {
     _fetchDataFromSupabase();
   }
 
-  // --- FUNGSI NARIK DATA (SUDAH DISESUAIKAN DENGAN SKEMA ASLIMU) ---
+  // --- FILTER ANTI ERROR BUAT DATA KOSONG DARI SUPABASE ---
+  int _safeInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toInt();
+    if (value is String) return double.tryParse(value)?.toInt() ?? 0;
+    return 0;
+  }
+
   Future<void> _fetchDataFromSupabase() async {
     setState(() => isLoading = true);
     try {
       final supabase = Supabase.instance.client;
 
-      // 1. Ambil data dari tabel ms_category_product
-      final categoryResponse = await supabase
-          .from('ms_category_product')
-          .select('category_name');
+      final categoryResponse = await supabase.from('ms_category_product').select('category_name');
       List<String> fetchedCategories = ["Semua"];
       for (var cat in categoryResponse) {
         if (cat['category_name'] != null) {
@@ -81,39 +76,35 @@ class _SalesScreenState extends State<SalesScreen> {
         }
       }
 
-      // 2. Ambil data dari tabel ms_product (Pake JOIN ke ms_category_product)
-      // Kita juga filter cuma ngambil yang is_active = true
       final productResponse = await supabase
           .from('ms_product')
           .select('''
-        id,
-        name_product,
-        selling_price,
-        image_url,
-        ms_category_product (
-          category_name
-        )
-      ''')
+            id,
+            name_product,
+            selling_price,
+            qty, 
+            image_url,
+            ms_category_product (category_name)
+          ''')
           .eq('is_active', true);
 
       List<Product> fetchedProducts = [];
       for (var prod in productResponse) {
-        // Cek kategori dari hasil relasi/join
         String catName = "Lainnya";
-        if (prod['ms_category_product'] != null &&
-            prod['ms_category_product']['category_name'] != null) {
+        if (prod['ms_category_product'] != null && prod['ms_category_product']['category_name'] != null) {
           catName = prod['ms_category_product']['category_name'];
         }
 
         fetchedProducts.add(
           Product(
-            id: prod['id'].toString(), // Pake ID aslimu yang UUID
-            name: prod['name_product'] ?? 'Tanpa Nama', // Kolom name_product
-            price: double.parse(
-              prod['selling_price'].toString(),
-            ).toInt(), // Kolom selling_price
-            category: catName, // Hasil Join
-            image: prod['image_url'], // Kolom image_url
+            id: prod['id']?.toString() ?? '', 
+            name: prod['name_product']?.toString() ?? 'Tanpa Nama', 
+            // PAKE FUNGSI SAFE INT BIAR KEBAL ERROR
+            price: _safeInt(prod['selling_price']), 
+            category: catName, 
+            image: prod['image_url']?.toString(), 
+            // PAKE FUNGSI SAFE INT BIAR KEBAL ERROR
+            qty: _safeInt(prod['qty']), 
           ),
         );
       }
@@ -128,10 +119,7 @@ class _SalesScreenState extends State<SalesScreen> {
       setState(() => isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Gagal mengambil data dari server."),
-            backgroundColor: PastelColors.rose,
-          ),
+          const SnackBar(content: Text("Gagal mengambil data dari server."), backgroundColor: PastelColors.rose),
         );
       }
     }
@@ -139,8 +127,7 @@ class _SalesScreenState extends State<SalesScreen> {
 
   List<Product> getFilteredProducts() {
     return databaseProducts.where((product) {
-      bool matchCategory =
-          selectedCategory == "Semua" || product.category == selectedCategory;
+      bool matchCategory = selectedCategory == "Semua" || product.category == selectedCategory;
       bool matchSearch = product.name.toLowerCase().contains(searchQuery);
       return matchCategory && matchSearch;
     }).toList();
@@ -156,60 +143,35 @@ class _SalesScreenState extends State<SalesScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            /// NAVBAR
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Builder(
-                    builder: (context) => IconButton(
-                      icon: const Icon(Icons.menu, size: 28),
-                      onPressed: () {
-                        Scaffold.of(context).openDrawer();
-                      },
-                    ),
+                    builder: (context) => IconButton(icon: const Icon(Icons.menu, size: 28), onPressed: () => Scaffold.of(context).openDrawer()),
                   ),
                   Row(
                     children: [
-                      /// CART ICON
                       Stack(
                         children: [
                           IconButton(
                             icon: const Icon(Icons.shopping_cart, size: 28),
-                            onPressed: () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const CartScreen(),
-                                ),
-                              );
-                            },
+                            onPressed: () async => await Navigator.push(context, MaterialPageRoute(builder: (context) => const CartScreen())),
                           ),
                           Positioned(
-                            right: 4,
-                            top: 4,
+                            right: 4, top: 4,
                             child: ValueListenableBuilder(
                               valueListenable: cartNotifier,
                               builder: (context, value, child) {
                                 if (value == 0) return const SizedBox();
                                 return Container(
                                   padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
-                                    color: PastelColors.rose,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 20,
-                                    minHeight: 20,
-                                  ),
+                                  decoration: const BoxDecoration(color: PastelColors.rose, shape: BoxShape.circle),
+                                  constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
                                   child: Text(
                                     value.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                                     textAlign: TextAlign.center,
                                   ),
                                 );
@@ -219,27 +181,16 @@ class _SalesScreenState extends State<SalesScreen> {
                         ],
                       ),
                       const SizedBox(width: 12),
-
-                      /// PROFILE ICON
                       Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: PastelColors.emerald,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.person_outline,
-                          color: Colors.white,
-                        ),
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(color: PastelColors.emerald, borderRadius: BorderRadius.circular(10)),
+                        child: const Icon(Icons.person_outline, color: Colors.white),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-
-            /// SEARCH
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
@@ -247,40 +198,18 @@ class _SalesScreenState extends State<SalesScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
                 ),
                 child: TextField(
-                  onChanged: (value) {
-                    setState(() {
-                      searchQuery = value.toLowerCase();
-                    });
-                  },
-                  decoration: const InputDecoration(
-                    icon: Icon(Icons.search, color: Colors.grey),
-                    hintText: "Search product...",
-                    border: InputBorder.none,
-                  ),
+                  onChanged: (value) => setState(() => searchQuery = value.toLowerCase()),
+                  decoration: const InputDecoration(icon: Icon(Icons.search, color: Colors.grey), hintText: "Search product...", border: InputBorder.none),
                 ),
               ),
             ),
-
             const SizedBox(height: 16),
-
-            // KONDISI LOADING: Munculin muter-muter pas narik data
             if (isLoading)
-              const Expanded(
-                child: Center(
-                  child: CircularProgressIndicator(color: PastelColors.emerald),
-                ),
-              )
+              const Expanded(child: Center(child: CircularProgressIndicator(color: PastelColors.emerald)))
             else ...[
-              /// CATEGORY (OTOMATIS DARI SUPABASE)
               SizedBox(
                 height: 40,
                 child: ListView.builder(
@@ -294,44 +223,21 @@ class _SalesScreenState extends State<SalesScreen> {
                       child: CategoryChip(
                         title: catName,
                         isSelected: selectedCategory == catName,
-                        onTap: () {
-                          setState(() {
-                            selectedCategory = catName;
-                          });
-                        },
+                        onTap: () => setState(() => selectedCategory = catName),
                       ),
                     );
                   },
                 ),
               ),
-
               const SizedBox(height: 16),
-
-              /// PRODUCT GRID (OTOMATIS DARI SUPABASE)
               Expanded(
                 child: filteredProducts.isEmpty
-                    ? const Center(
-                        child: Text(
-                          "Tidak ada produk, coba isi database ges!",
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      )
+                    ? const Center(child: Text("Tidak ada produk, coba isi database ges!", style: TextStyle(color: Colors.grey)))
                     : GridView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         itemCount: filteredProducts.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 14,
-                              mainAxisSpacing: 14,
-                              childAspectRatio: 0.75,
-                            ),
-                        itemBuilder: (context, index) {
-                          return ProductCard(product: filteredProducts[index]);
-                        },
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 14, mainAxisSpacing: 14, childAspectRatio: 0.75),
+                        itemBuilder: (context, index) => ProductCard(product: filteredProducts[index]),
                       ),
               ),
             ],
@@ -362,35 +268,17 @@ class AppDrawer extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: PastelColors.emerald,
-                    size: 28,
-                  ),
+                  width: 50, height: 50,
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+                  child: const Icon(Icons.person, color: PastelColors.emerald, size: 28),
                 ),
                 const SizedBox(width: 12),
                 const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "NaWa",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    Text(
-                      "Cashier",
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
+                    Text("NaWa", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text("Cashier", style: TextStyle(color: Colors.white70, fontSize: 13)),
                   ],
                 ),
               ],
@@ -400,97 +288,36 @@ class AppDrawer extends StatelessWidget {
             child: ListView(
               children: [
                 ListTile(
-                  leading: const Icon(
-                    Icons.dashboard,
-                    color: PastelColors.grey,
-                  ),
-                  title: const Text(
-                    "Dashboard",
-                    style: TextStyle(
-                      color: PastelColors.grey,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const DashboardScreen(),
-                      ),
-                    );
-                  },
+                  leading: const Icon(Icons.dashboard, color: PastelColors.grey),
+                  title: const Text("Dashboard", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.w600)),
+                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const DashboardScreen())),
                 ),
                 ListTile(
-                  leading: const Icon(
-                    Icons.point_of_sale,
-                    color: PastelColors.emerald,
-                  ),
-                  title: const Text(
-                    "Sales",
-                    style: TextStyle(
-                      color: PastelColors.emerald,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
+                  leading: const Icon(Icons.point_of_sale, color: PastelColors.emerald),
+                  title: const Text("Sales", style: TextStyle(color: PastelColors.emerald, fontWeight: FontWeight.bold)),
+                  onTap: () => Navigator.pop(context),
                 ),
                 ListTile(
-                  leading: const Icon(
-                    Icons.receipt_long,
-                    color: PastelColors.grey,
-                  ),
-                  title: const Text(
-                    "Order History",
-                    style: TextStyle(
-                      color: PastelColors.grey,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  leading: const Icon(Icons.receipt_long, color: PastelColors.grey),
+                  title: const Text("Order History", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.w600)),
                   onTap: () {
                     if (!shiftActive.value) {
-                      showWarningPopup(
-                        context,
-                        "Akses Ditolak",
-                        "Kamu harus memulai shift (Start Shift) terlebih dahulu.",
-                      );
+                      showWarningPopup(context, "Akses Ditolak", "Kamu harus memulai shift (Start Shift) terlebih dahulu.");
                       return;
                     }
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const OrderHistoryScreen(),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
                   },
                 ),
                 const Divider(),
                 ListTile(
                   leading: const Icon(Icons.logout, color: PastelColors.rose),
-                  title: const Text(
-                    "Logout",
-                    style: TextStyle(
-                      color: PastelColors.rose,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.w600)),
                   onTap: () {
                     if (shiftActive.value) {
-                      showWarningPopup(
-                        context,
-                        "Gagal Logout",
-                        "Tolong akhiri shift (End Shift) terlebih dahulu sebelum logout.",
-                      );
+                      showWarningPopup(context, "Gagal Logout", "Tolong akhiri shift (End Shift) terlebih dahulu sebelum logout.");
                       return;
                     }
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LoginScreen(),
-                      ),
-                      (route) => false,
-                    );
+                    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
                   },
                 ),
               ],

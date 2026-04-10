@@ -4,7 +4,7 @@ class Product {
   final int price;
   final String category;
   final String? image;
-  final int stock;
+  final int qty; // SUDAH DIGANTI JADI QTY
 
   Product({
     this.id = '', 
@@ -12,6 +12,6 @@ class Product {
     required this.price,
     required this.category,
     this.image,
-    this.stock = 0,
+    this.qty = 0, // DEFAULT NYA JUGA QTY
   });
 }

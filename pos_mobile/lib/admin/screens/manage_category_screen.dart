@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-// --- IMPORT PATH DISESUAIKAN BIAR MANJAT 4 FOLDER ---
+// --- IMPORT PATH DISESUAIKAN ---
 import '../../../../theme/colors.dart';
 import '../../../../screens/login_screen.dart';
 import 'admin_dashboard_screen.dart'; 
@@ -14,18 +15,92 @@ class ManageCategoryScreen extends StatefulWidget {
 }
 
 class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
-  // Data Dummy Kategori
-  List<Map<String, dynamic>> categories = [
-    {"name": "Makanan Instan", "icon": Icons.bakery_dining},
-    {"name": "Minuman", "icon": Icons.local_drink},
-    {"name": "Snack", "icon": Icons.icecream},
-    {"name": "Sembako", "icon": Icons.shopping_basket},
-    {"name": "Kebutuhan Rumah Tangga", "icon": Icons.home_work},
-  ];
+  final supabase = Supabase.instance.client;
+  
+  List<Map<String, dynamic>> categories = [];
+  bool isLoading = true;
+  
+  // --- FITUR SEARCH ---
+  String searchQuery = ""; // Penampung teks pencarian
 
-  void _tampilFormKategori([Map<String, dynamic>? kategoriLama, int? index]) {
+  @override
+  void initState() {
+    super.initState();
+    _fetchCategories(); 
+  }
+
+  // --- 1. READ ---
+  Future<void> _fetchCategories() async {
+    setState(() => isLoading = true);
+    try {
+      final response = await supabase
+          .from('ms_category_product')
+          .select('id, category_name')
+          .order('category_name', ascending: true);
+
+      setState(() {
+        categories = List<Map<String, dynamic>>.from(response);
+        isLoading = false;
+      });
+    } catch (e) {
+      print("Error ambil kategori: $e");
+      setState(() => isLoading = false);
+      _showSnackBar("Gagal mengambil data kategori", isError: true);
+    }
+  }
+
+  // --- 2. CREATE & UPDATE ---
+  Future<void> _saveCategory(String name, {dynamic id}) async {
+    try {
+      if (id == null) {
+        await supabase.from('ms_category_product').insert({'category_name': name});
+        _showSnackBar("Kategori berhasil ditambahkan!");
+      } else {
+        await supabase.from('ms_category_product').update({'category_name': name}).eq('id', id);
+        _showSnackBar("Kategori berhasil diupdate!");
+      }
+      _fetchCategories(); 
+    } catch (e) {
+      _showSnackBar("Gagal menyimpan kategori", isError: true);
+    }
+  }
+
+  // --- 3. DELETE ---
+  Future<void> _deleteCategory(dynamic id) async {
+    try {
+      await supabase.from('ms_category_product').delete().eq('id', id);
+      _showSnackBar("Kategori berhasil dihapus!");
+      _fetchCategories(); 
+    } catch (e) {
+      _showSnackBar("Gagal menghapus kategori. Mungkin sedang dipakai di produk.", isError: true);
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? PastelColors.rose : PastelColors.emerald,
+      ),
+    );
+  }
+
+  IconData _getCategoryIcon(String name) {
+    String lowerName = name.toLowerCase();
+    if (lowerName.contains('makan')) return Icons.bakery_dining;
+    if (lowerName.contains('minum')) return Icons.local_drink;
+    if (lowerName.contains('snack')) return Icons.icecream;
+    if (lowerName.contains('sembako')) return Icons.shopping_basket;
+    return Icons.category; 
+  }
+
+  // --- FORM POPUP ---
+  void _tampilFormKategori([Map<String, dynamic>? kategoriLama]) {
     final bool isEdit = kategoriLama != null;
-    final TextEditingController nameController = TextEditingController(text: isEdit ? kategoriLama['name'] : '');
+    final TextEditingController nameController = TextEditingController(
+      text: isEdit ? kategoriLama['category_name'] : ''
+    );
 
     showModalBottomSheet(
       context: context,
@@ -51,6 +126,7 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: nameController,
+              autofocus: true,
               decoration: InputDecoration(
                 hintText: "Contoh: Elektronik",
                 prefixIcon: const Icon(Icons.category_outlined),
@@ -67,18 +143,11 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
                   backgroundColor: PastelColors.emerald,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 0,
                 ),
-                onPressed: () {
+                onPressed: () async {
                   if (nameController.text.isEmpty) return;
-                  setState(() {
-                    if (isEdit) {
-                      categories[index!] = {"name": nameController.text, "icon": Icons.category};
-                    } else {
-                      categories.add({"name": nameController.text, "icon": Icons.category});
-                    }
-                  });
                   Navigator.pop(context);
+                  await _saveCategory(nameController.text, id: isEdit ? kategoriLama['id'] : null);
                 },
                 child: const Text("Simpan Kategori", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
               ),
@@ -92,6 +161,14 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // --- LOGIKA SEARCH DI SINI ---
+    final filteredCategories = categories.where((cat) {
+      return cat['category_name']
+          .toString()
+          .toLowerCase()
+          .contains(searchQuery.toLowerCase());
+    }).toList();
+
     return Scaffold(
       backgroundColor: PastelColors.mint,
       drawer: const SizedBox(width: 260, child: CategoryAdminDrawer()),
@@ -107,46 +184,95 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
         onPressed: () => _tampilFormKategori(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final cat = categories[index];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)]
-            ),
-            child: ListTile(
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: PastelColors.mint.withOpacity(0.5), borderRadius: BorderRadius.circular(10)),
-                child: Icon(cat['icon'] as IconData, color: PastelColors.emerald),
+      body: isLoading 
+        ? const Center(child: CircularProgressIndicator(color: PastelColors.emerald))
+        : Column(
+            children: [
+              // --- SEARCH BAR ---
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        searchQuery = value;
+                      });
+                    },
+                    decoration: const InputDecoration(
+                      icon: Icon(Icons.search, color: Colors.grey),
+                      hintText: "Search category...",
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
               ),
-              title: Text(cat['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-              trailing: PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert, color: Colors.grey),
-                onSelected: (val) {
-                  if (val == 'edit') _tampilFormKategori(cat, index);
-                  if (val == 'delete') {
-                    setState(() => categories.removeAt(index));
-                  }
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'edit', child: Text("Edit")),
-                  const PopupMenuItem(value: 'delete', child: Text("Hapus", style: TextStyle(color: Colors.red))),
-                ],
+              Expanded(
+                child: filteredCategories.isEmpty
+                  ? const Center(child: Text("Kategori tidak ditemukan.", style: TextStyle(color: Colors.grey)))
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredCategories.length,
+                      itemBuilder: (context, index) {
+                        final cat = filteredCategories[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)]
+                          ),
+                          child: ListTile(
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(color: PastelColors.mint.withOpacity(0.5), borderRadius: BorderRadius.circular(10)),
+                              child: Icon(_getCategoryIcon(cat['category_name'] ?? ''), color: PastelColors.emerald),
+                            ),
+                            title: Text(cat['category_name'] ?? 'Tanpa Nama', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            trailing: PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert, color: Colors.grey),
+                              onSelected: (val) {
+                                if (val == 'edit') _tampilFormKategori(cat);
+                                if (val == 'delete') _showDeleteDialog(cat);
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(value: 'edit', child: Text("Edit")),
+                                const PopupMenuItem(value: 'delete', child: Text("Hapus", style: TextStyle(color: PastelColors.rose))),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
               ),
-            ),
-          );
-        },
+            ],
+          ),
+    );
+  }
+
+  void _showDeleteDialog(Map<String, dynamic> cat) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text("Hapus Kategori?"),
+        content: Text("Yakin mau menghapus '${cat['category_name']}'?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
+          TextButton(onPressed: () { Navigator.pop(ctx); _deleteCategory(cat['id']); }, child: const Text("Hapus", style: TextStyle(color: Colors.red))),
+        ],
       ),
     );
   }
 }
 
+// ==========================================
+// DRAWER ADMIN LENGKAP & KONSISTEN
+// ==========================================
 class CategoryAdminDrawer extends StatelessWidget {
   const CategoryAdminDrawer({super.key});
 
@@ -163,10 +289,10 @@ class CategoryAdminDrawer extends StatelessWidget {
             decoration: const BoxDecoration(color: PastelColors.sage), 
             child: Row(
               children: [
-                Container(
-                  width: 50, height: 50,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                  child: const Icon(Icons.admin_panel_settings, color: PastelColors.sage, size: 28),
+                CircleAvatar(
+                  radius: 25,
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.admin_panel_settings, color: PastelColors.sage, size: 28),
                 ),
                 const SizedBox(width: 12),
                 const Column(
@@ -228,23 +354,14 @@ class CategoryAdminDrawer extends StatelessWidget {
   Widget _buildMenuTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2),
-      ),
+      child: Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
     );
   }
 
   Widget _buildMenuItem(BuildContext context, IconData icon, String title, bool isSelected, VoidCallback onTap) {
     return ListTile(
       leading: Icon(icon, color: isSelected ? PastelColors.emerald : PastelColors.grey),
-      title: Text(
-        title, 
-        style: TextStyle(
-          color: isSelected ? PastelColors.emerald : PastelColors.grey, 
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600
-        )
-      ),
+      title: Text(title, style: TextStyle(color: isSelected ? PastelColors.emerald : PastelColors.grey, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600)),
       selected: isSelected,
       selectedTileColor: PastelColors.mint.withOpacity(0.3),
       onTap: onTap,

@@ -7,13 +7,13 @@ List<Product> products = [
     name: "Indomie Goreng",
     price: 3500,
     category: "Makanan Instan",
-    stock: 50,
+    qty: 50,
   ),
   Product(
     id: 'dummy_2',
     name: "Es Teh Manis",
     price: 5000,
     category: "Minuman",
-    stock: 20,
+    qty: 20,
   ),
 ];
