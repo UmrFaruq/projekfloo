@@ -7,6 +7,13 @@ import '../../../../theme/colors.dart';
 import '../../../../screens/login_screen.dart';
 import 'admin_dashboard_screen.dart';
 import 'manage_category_screen.dart';
+import 'manage_cashier_screen.dart';
+import 'manage_payment_screen.dart';
+import 'manage_stock_screen.dart';
+import 'purchase_incoming_screen.dart';
+import 'sales_report_screen.dart';
+import 'manage_shifts_screen.dart';
+import 'audit_trail_screen.dart';
 
 class ManageProductScreen extends StatefulWidget {
   const ManageProductScreen({super.key});
@@ -375,9 +382,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
   }
 }
 
-// ==========================================
-// DRAWER FULL
-// ==========================================
+/// DRAWER UNIVERSAL UNTUK SEMUA HALAMAN ADMIN (KECUALI DASHBOARD)
 class FullAdminDrawer extends StatelessWidget {
   final String activeMenu;
   const FullAdminDrawer({super.key, required this.activeMenu});
@@ -391,11 +396,15 @@ class FullAdminDrawer extends StatelessWidget {
           Container(
             height: 150, width: double.infinity, padding: const EdgeInsets.only(top: 40, left: 16),
             decoration: const BoxDecoration(color: PastelColors.sage),
-            child: const Row(
+            child: Row(
               children: [
-                CircleAvatar(backgroundColor: Colors.white, child: Icon(Icons.admin_panel_settings, color: PastelColors.sage)),
-                SizedBox(width: 12),
-                Column(
+                Container(
+                  width: 50, height: 50,
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
+                  child: const Icon(Icons.admin_panel_settings, color: PastelColors.sage, size: 28),
+                ),
+                const SizedBox(width: 12),
+                const Column(
                   mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text("Super Admin", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
@@ -413,7 +422,10 @@ class FullAdminDrawer extends StatelessWidget {
                 _buildMenuItem(context, Icons.dashboard, "Dashboard", activeMenu == "Dashboard", () {
                   Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen()), (route) => false);
                 }),
-                _buildMenuItem(context, Icons.receipt_long, "Sales Report", activeMenu == "Sales Report", () {}),
+                _buildMenuItem(context, Icons.receipt_long, "Sales Report", activeMenu == "Sales Report", () {
+                  if (activeMenu != "Sales Report") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SalesReportScreen()));
+                  else Navigator.pop(context);
+                }),
                 
                 _buildMenuTitle("MASTER DATA"),
                 _buildMenuItem(context, Icons.inventory_2_outlined, "Manage Products", activeMenu == "Manage Products", () {
@@ -421,15 +433,37 @@ class FullAdminDrawer extends StatelessWidget {
                   else Navigator.pop(context);
                 }),
                 _buildMenuItem(context, Icons.category_outlined, "Manage Categories", activeMenu == "Manage Categories", () {
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCategoryScreen()));
+                  if (activeMenu != "Manage Categories") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCategoryScreen()));
+                  else Navigator.pop(context);
                 }),
-                _buildMenuItem(context, Icons.people_outline, "Manage Cashiers", activeMenu == "Manage Cashiers", () {}),
-                _buildMenuItem(context, Icons.payments_outlined, "Payment Methods", activeMenu == "Payment Methods", () {}),
+                _buildMenuItem(context, Icons.people_outline, "Manage Cashiers", activeMenu == "Manage Cashiers", () {
+                  if (activeMenu != "Manage Cashiers") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCashierScreen()));
+                  else Navigator.pop(context);
+                }),
+                _buildMenuItem(context, Icons.payments_outlined, "Payment Methods", activeMenu == "Payment Methods", () {
+                  if (activeMenu != "Payment Methods") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagePaymentScreen()));
+                  else Navigator.pop(context);
+                }),
 
                 _buildMenuTitle("OPERATIONAL"),
-                _buildMenuItem(context, Icons.warehouse_outlined, "Manage Stock", activeMenu == "Manage Stock", () {}),
-                _buildMenuItem(context, Icons.local_shipping_outlined, "Purchase", activeMenu == "Purchase", () {}),
-                _buildMenuItem(context, Icons.schedule, "Manage Shifts", activeMenu == "Manage Shifts", () {}),
+                _buildMenuItem(context, Icons.warehouse_outlined, "Manage Stock", activeMenu == "Manage Stock", () {
+                  if (activeMenu != "Manage Stock") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageStockScreen()));
+                  else Navigator.pop(context);
+                }),
+                _buildMenuItem(context, Icons.local_shipping_outlined, "Purchase / Incoming", activeMenu == "Purchase / Incoming", () {
+                  if (activeMenu != "Purchase / Incoming") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PurchaseIncomingScreen()));
+                  else Navigator.pop(context);
+                }),
+                _buildMenuItem(context, Icons.schedule, "Manage Shifts", activeMenu == "Manage Shifts", () {
+                  if (activeMenu != "Manage Shifts") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageShiftsScreen()));
+                  else Navigator.pop(context);
+                }),
+
+                _buildMenuTitle("SYSTEM"),
+                _buildMenuItem(context, Icons.history, "Audit Trail", activeMenu == "Audit Trail", () {
+                  if (activeMenu != "Audit Trail") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuditTrailScreen()));
+                  else Navigator.pop(context);
+                }),
 
                 const Divider(),
                 ListTile(
@@ -437,6 +471,7 @@ class FullAdminDrawer extends StatelessWidget {
                   title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold)),
                   onTap: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false),
                 ),
+                const SizedBox(height: 20),
               ],
             ),
           ),

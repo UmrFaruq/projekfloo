@@ -1,11 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // IMPORT SUPABASE UNTUK AMBIL DATA KASIR
 import '../../theme/colors.dart';
 import '../../screens/login_screen.dart';
-import 'manage_product_screen.dart'; // IMPORT HALAMAN MANAGE PRODUCT
-import 'manage_category_screen.dart'; // IMPORT HALAMAN MANAGE PRODUCT
+import 'manage_product_screen.dart'; 
+import 'manage_category_screen.dart';
+import 'manage_cashier_screen.dart'; // IMPORT HALAMAN KASIR
+import 'manage_payment_screen.dart'; // IMPORT HALAMAN PAYMENT
+import 'manage_stock_screen.dart';
+import 'purchase_incoming_screen.dart';
+import 'sales_report_screen.dart';
+import 'manage_shifts_screen.dart';
+import 'audit_trail_screen.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  int jumlahKasirAktif = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _hitungKasirAktif();
+  }
+
+  // --- FUNGSI MENGHITUNG JUMLAH KASIR DARI SUPABASE ---
+  Future<void> _hitungKasirAktif() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('ms_user')
+          .select('id')
+          .eq('role', 'kasir'); // Disesuaikan dengan role database abang
+      
+      if (mounted) {
+        setState(() {
+          jumlahKasirAktif = response.length;
+        });
+      }
+    } catch (e) {
+      print("Gagal menghitung kasir: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +138,8 @@ class AdminDashboardScreen extends StatelessWidget {
                           children: [
                             _buildSmallStatCard("Transaksi", "32", "+5 transaksi", Icons.receipt_long, PastelColors.teal),
                             const SizedBox(height: 12),
-                            _buildSmallStatCard("Kasir Aktif", "4 Kasir", "Sedang bertugas", Icons.people, PastelColors.sage),
+                            // --- DATA KASIR AKTIF SEKARANG DINAMIS ---
+                            _buildSmallStatCard("Kasir Aktif", "$jumlahKasirAktif Kasir", "Terdaftar di sistem", Icons.people, PastelColors.sage),
                           ],
                         ),
                       ),
@@ -136,22 +176,23 @@ class AdminDashboardScreen extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // TOMBOL MANAGE PRODUCTS DI DASHBOARD
                       Expanded(child: _buildQuickActionBtn("Manage\nProducts", Icons.inventory_2_outlined, () {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageProductScreen()));
                       })),
                       const SizedBox(width: 8),
-                      // Tombol lain biarin kosong dulu fungsinya
-                      Expanded(child: _buildQuickActionBtn("Manage\nCashiers", Icons.people_outline, () {})),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildQuickActionBtn("Manage\nCategories", Icons.category_outlined, () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ManageCategoryScreen()),
-                        );
+                      // FUNGSI NAVIGASI MANAGE CASHIER DIPASTIKAN JALAN
+                      Expanded(child: _buildQuickActionBtn("Manage\nCashiers", Icons.people_outline, () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageCashierScreen()));
                       })),
                       const SizedBox(width: 8),
-                      Expanded(child: _buildQuickActionBtn("Payment\nMethods", Icons.payments_outlined, () {})),
+                      Expanded(child: _buildQuickActionBtn("Manage\nCategories", Icons.category_outlined, () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageCategoryScreen()));
+                      })),
+                      const SizedBox(width: 8),
+                      // FUNGSI NAVIGASI PAYMENT METHOD DIPASTIKAN JALAN
+                      Expanded(child: _buildQuickActionBtn("Payment\nMethods", Icons.payments_outlined, () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagePaymentScreen()));
+                      })),
                     ],
                   ),
 
@@ -241,10 +282,9 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  // --- REVISI WIDGET QUICK ACTION BTN: TAMBAH PARAMETER onTap ---
   Widget _buildQuickActionBtn(String title, IconData icon, VoidCallback onTap) {
     return InkWell(
-      onTap: onTap, // Menjalankan fungsi navigasi pas diklik
+      onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 2), 
@@ -294,7 +334,7 @@ class AdminDashboardScreen extends StatelessWidget {
   }
 }
 
-/// ADMIN DRAWER (SIDEBAR KHUSUS ADMIN)
+/// ADMIN DRAWER (KHUSUS DASHBOARD)
 class AdminDrawer extends StatelessWidget {
   const AdminDrawer({super.key});
 
@@ -305,10 +345,8 @@ class AdminDrawer extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            height: 150,
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
-            decoration: const BoxDecoration(color: PastelColors.sage), 
+            height: 150, width: double.infinity, padding: const EdgeInsets.only(top: 40, left: 16),
+            decoration: const BoxDecoration(color: PastelColors.sage),
             child: Row(
               children: [
                 Container(
@@ -318,93 +356,86 @@ class AdminDrawer extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text("Super Admin", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
                     Text("Owner", style: TextStyle(color: Colors.white70, fontSize: 13)),
                   ],
-                )
+                ),
               ],
             ),
           ),
-          
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
                 _buildMenuTitle("MAIN MENU"),
-                _buildMenuItem(Icons.dashboard, "Dashboard", true, () {
-                  Navigator.pop(context); // Tutup drawer
+                _buildMenuItem(Icons.dashboard, "Dashboard", true, () => Navigator.pop(context)),
+                _buildMenuItem(Icons.receipt_long, "Sales Report", false, () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesReportScreen()));
                 }),
-                _buildMenuItem(Icons.receipt_long, "Sales Report", false, () {}),
                 
                 _buildMenuTitle("MASTER DATA"),
-                
-                // TOMBOL MANAGE PRODUCTS DI SIDEBAR
                 _buildMenuItem(Icons.inventory_2_outlined, "Manage Products", false, () {
-                  Navigator.pop(context); // Tutup drawer dulu biar rapi
+                  Navigator.pop(context);
                   Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageProductScreen()));
                 }),
-                
                 _buildMenuItem(Icons.category_outlined, "Manage Categories", false, () {
-                  Navigator.pop(context); // Tutup sidebar dulu
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ManageCategoryScreen()),
-                  );
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageCategoryScreen()));
                 }),
-                _buildMenuItem(Icons.people_outline, "Manage Cashiers", false, () {}),
-                _buildMenuItem(Icons.payments_outlined, "Payment Methods", false, () {}),
-                
+                _buildMenuItem(Icons.people_outline, "Manage Cashiers", false, () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageCashierScreen()));
+                }),
+                _buildMenuItem(Icons.payments_outlined, "Payment Methods", false, () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagePaymentScreen()));
+                }),
+
                 _buildMenuTitle("OPERATIONAL"),
-                _buildMenuItem(Icons.warehouse_outlined, "Manage Stock", false, () {}),
-                _buildMenuItem(Icons.local_shipping_outlined, "Purchase / Incoming", false, () {}),
-                _buildMenuItem(Icons.schedule, "Manage Shifts", false, () {}),
+                _buildMenuItem(Icons.warehouse_outlined, "Manage Stock", false, () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageStockScreen()));
+                }),
+                _buildMenuItem(Icons.local_shipping_outlined, "Purchase / Incoming", false, () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const PurchaseIncomingScreen()));
+                }),
+                _buildMenuItem(Icons.schedule, "Manage Shifts", false, () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageShiftsScreen()));
+                }),
 
                 _buildMenuTitle("SYSTEM"),
-                _buildMenuItem(Icons.history, "Audit Trail", false, () {}),
-                
+                _buildMenuItem(Icons.history, "Audit Trail", false, () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const AuditTrailScreen()));
+                }),
+
                 const Divider(),
                 ListTile(
                   leading: const Icon(Icons.logout, color: PastelColors.rose),
-                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
-                  },
+                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold)),
+                  onTap: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false),
                 ),
-                const SizedBox(height: 20),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMenuTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2),
-      ),
-    );
-  }
+  Widget _buildMenuTitle(String title) => Padding(
+    padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
+    child: Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+  );
 
-  Widget _buildMenuItem(IconData icon, String title, bool isSelected, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: isSelected ? PastelColors.emerald : PastelColors.grey),
-      title: Text(
-        title, 
-        style: TextStyle(
-          color: isSelected ? PastelColors.emerald : PastelColors.grey, 
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600
-        )
-      ),
-      selected: isSelected,
-      selectedTileColor: PastelColors.mint.withOpacity(0.3),
-      onTap: onTap,
-    );
-  }
+  Widget _buildMenuItem(IconData icon, String title, bool isSelected, VoidCallback onTap) => ListTile(
+    leading: Icon(icon, color: isSelected ? PastelColors.emerald : PastelColors.grey),
+    title: Text(title, style: TextStyle(color: isSelected ? PastelColors.emerald : PastelColors.grey, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600)),
+    selected: isSelected, selectedTileColor: PastelColors.mint.withOpacity(0.3), onTap: onTap,
+  );
 }

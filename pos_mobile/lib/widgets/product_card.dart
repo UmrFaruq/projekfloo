@@ -91,21 +91,47 @@ class ProductCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+            
+            // ==========================================
+            // NAMA PRODUK
+            // ==========================================
             Text(
               product.name,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: PastelColors.grey),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold, 
+                fontSize: 15, // <-- GANTI UKURAN NAMA PRODUK DI SINI (Awalnya 14)
+                color: PastelColors.grey
+              ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
+            
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // PERBAIKAN: Panggil product.qty
-                Text("Stok: ${product.qty}", style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
+                // ==========================================
+                // TEKS STOK
+                // ==========================================
+                Text(
+                  "Stok: ${product.qty}", 
+                  style: const TextStyle(
+                    fontSize: 12, // <-- GANTI UKURAN STOK DI SINI (Awalnya 11)
+                    color: Colors.grey, 
+                    fontWeight: FontWeight.w600
+                  )
+                ),
+                
+                // ==========================================
+                // TEKS HARGA
+                // ==========================================
                 Text(
                   formatRupiah(product.price),
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: PastelColors.emerald),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold, 
+                    fontSize: 14, // <-- GANTI UKURAN HARGA DI SINI (Awalnya 13)
+                    color: PastelColors.emerald
+                  ),
                 ),
               ],
             ),

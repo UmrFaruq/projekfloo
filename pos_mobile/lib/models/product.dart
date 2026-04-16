@@ -4,7 +4,8 @@ class Product {
   final int price;
   final String category;
   final String? image;
-  final int qty; // SUDAH DIGANTI JADI QTY
+  final int qty; 
+  final String unit; // <--- TAMBAHKAN INI
 
   Product({
     this.id = '', 
@@ -12,6 +13,7 @@ class Product {
     required this.price,
     required this.category,
     this.image,
-    this.qty = 0, // DEFAULT NYA JUGA QTY
+    this.qty = 0,
+    this.unit = 'pcs', // <--- KASIH DEFAULT 'pcs' BIAR AMAN
   });
 }

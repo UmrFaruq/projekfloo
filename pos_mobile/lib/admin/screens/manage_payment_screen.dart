@@ -1,142 +1,114 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-// --- IMPORT PATH DISESUAIKAN ---
+// --- IMPORT PATH (Sesuaikan dengan struktur folder abang) ---
 import '../../../../theme/colors.dart';
 import '../../../../screens/login_screen.dart';
-import 'admin_dashboard_screen.dart'; 
-import 'manage_product_screen.dart'; 
-import 'manage_cashier_screen.dart';
-import 'manage_payment_screen.dart';
+import 'admin_dashboard_screen.dart';
+import 'manage_product_screen.dart';
+import 'manage_category_screen.dart';
+import 'manage_cashier_screen.dart'; // IMPORT INI WAJIB ADA
 import 'manage_stock_screen.dart';
 import 'purchase_incoming_screen.dart';
 import 'sales_report_screen.dart';
 import 'manage_shifts_screen.dart';
 import 'audit_trail_screen.dart';
 
-class ManageCategoryScreen extends StatefulWidget {
-  const ManageCategoryScreen({super.key});
+class ManagePaymentScreen extends StatefulWidget {
+  const ManagePaymentScreen({super.key});
 
   @override
-  State<ManageCategoryScreen> createState() => _ManageCategoryScreenState();
+  State<ManagePaymentScreen> createState() => _ManagePaymentScreenState();
 }
 
-class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
+class _ManagePaymentScreenState extends State<ManagePaymentScreen> {
   final supabase = Supabase.instance.client;
-  
-  List<Map<String, dynamic>> categories = [];
+  List<Map<String, dynamic>> payments = [];
   bool isLoading = true;
-  
-  // --- FITUR SEARCH ---
-  String searchQuery = ""; // Penampung teks pencarian
 
   @override
   void initState() {
     super.initState();
-    _fetchCategories(); 
+    _fetchPayments();
   }
 
-  // --- 1. READ ---
-  Future<void> _fetchCategories() async {
+  Future<void> _fetchPayments() async {
     setState(() => isLoading = true);
     try {
       final response = await supabase
-          .from('ms_category_product')
-          .select('id, category_name')
-          .order('category_name', ascending: true);
+          .from('ms_payment_method')
+          .select('id, method_name')
+          .filter('deleted_at', 'is', null)
+          .order('method_name', ascending: true);
 
       setState(() {
-        categories = List<Map<String, dynamic>>.from(response);
+        payments = List<Map<String, dynamic>>.from(response);
         isLoading = false;
       });
     } catch (e) {
-      print("Error ambil kategori: $e");
       setState(() => isLoading = false);
-      _showSnackBar("Gagal mengambil data kategori", isError: true);
+      _showSnackBar("Gagal mengambil data metode pembayaran", isError: true);
     }
   }
 
-  // --- 2. CREATE & UPDATE ---
-  Future<void> _saveCategory(String name, {dynamic id}) async {
+  Future<void> _savePayment(String name, {String? id}) async {
     try {
       if (id == null) {
-        await supabase.from('ms_category_product').insert({'category_name': name});
-        _showSnackBar("Kategori berhasil ditambahkan!");
+        await supabase.from('ms_payment_method').insert({'method_name': name});
+        _showSnackBar("Metode pembayaran berhasil ditambah!");
       } else {
-        await supabase.from('ms_category_product').update({'category_name': name}).eq('id', id);
-        _showSnackBar("Kategori berhasil diupdate!");
+        await supabase.from('ms_payment_method').update({'method_name': name}).eq('id', id);
+        _showSnackBar("Metode pembayaran berhasil diupdate!");
       }
-      _fetchCategories(); 
+      _fetchPayments();
     } catch (e) {
-      _showSnackBar("Gagal menyimpan kategori", isError: true);
+      _showSnackBar("Gagal menyimpan data", isError: true);
     }
   }
 
-  // --- 3. DELETE ---
-  Future<void> _deleteCategory(dynamic id) async {
+  Future<void> _deletePayment(String id) async {
     try {
-      await supabase.from('ms_category_product').delete().eq('id', id);
-      _showSnackBar("Kategori berhasil dihapus!");
-      _fetchCategories(); 
+      await supabase.from('ms_payment_method').update({
+        'deleted_at': DateTime.now().toIso8601String()
+      }).eq('id', id);
+      
+      _showSnackBar("Metode pembayaran dihapus!");
+      _fetchPayments();
     } catch (e) {
-      _showSnackBar("Gagal menghapus kategori. Mungkin sedang dipakai di produk.", isError: true);
+      _showSnackBar("Gagal menghapus data", isError: true);
     }
   }
 
-  void _showSnackBar(String message, {bool isError = false}) {
+  void _showSnackBar(String m, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? PastelColors.rose : PastelColors.emerald,
-      ),
+      SnackBar(content: Text(m), backgroundColor: isError ? PastelColors.rose : PastelColors.emerald)
     );
   }
 
-  IconData _getCategoryIcon(String name) {
-    String lowerName = name.toLowerCase();
-    if (lowerName.contains('makan')) return Icons.bakery_dining;
-    if (lowerName.contains('minum')) return Icons.local_drink;
-    if (lowerName.contains('snack')) return Icons.icecream;
-    if (lowerName.contains('sembako')) return Icons.shopping_basket;
-    return Icons.category; 
-  }
-
-  // --- FORM POPUP ---
-  void _tampilFormKategori([Map<String, dynamic>? kategoriLama]) {
-    final bool isEdit = kategoriLama != null;
-    final TextEditingController nameController = TextEditingController(
-      text: isEdit ? kategoriLama['category_name'] : ''
-    );
+  void _tampilForm([Map<String, dynamic>? data]) {
+    final bool isEdit = data != null;
+    final TextEditingController nameController = TextEditingController(text: isEdit ? data['method_name'] : '');
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          top: 24, left: 24, right: 24
-        ),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 24, left: 24, right: 24),
+        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              isEdit ? "Edit Kategori" : "Tambah Kategori Baru",
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            Text(isEdit ? "Edit Metode Pembayaran" : "Tambah Metode Pembayaran", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             TextField(
               controller: nameController,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: "Contoh: Elektronik",
-                prefixIcon: const Icon(Icons.category_outlined),
+                hintText: "Contoh: Tunai / QRIS",
+                prefixIcon: const Icon(Icons.payments_outlined),
                 filled: true,
                 fillColor: Colors.grey.shade100,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
@@ -147,16 +119,16 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PastelColors.emerald,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  backgroundColor: PastelColors.emerald, 
+                  padding: const EdgeInsets.symmetric(vertical: 16), 
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
                 ),
-                onPressed: () async {
+                onPressed: () {
                   if (nameController.text.isEmpty) return;
                   Navigator.pop(context);
-                  await _saveCategory(nameController.text, id: isEdit ? kategoriLama['id'] : null);
+                  _savePayment(nameController.text, id: isEdit ? data['id'] : null);
                 },
-                child: const Text("Simpan Kategori", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                child: const Text("SIMPAN", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 24),
@@ -168,110 +140,69 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // --- LOGIKA SEARCH DI SINI ---
-    final filteredCategories = categories.where((cat) {
-      return cat['category_name']
-          .toString()
-          .toLowerCase()
-          .contains(searchQuery.toLowerCase());
-    }).toList();
-
     return Scaffold(
       backgroundColor: PastelColors.mint,
-      // MENGGUNAKAN FULL ADMIN DRAWER AGAR SINKRON DENGAN HALAMAN LAIN
-      drawer: const SizedBox(width: 260, child: FullAdminDrawer(activeMenu: "Manage Categories")),
+      drawer: const SizedBox(width: 260, child: FullAdminDrawer(activeMenu: "Payment Methods")),
       appBar: AppBar(
-        backgroundColor: PastelColors.mint,
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        title: const Text("Manage Categories", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        backgroundColor: PastelColors.mint, elevation: 0, centerTitle: true, iconTheme: const IconThemeData(color: Colors.black87),
+        title: const Text("Payment Methods", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: PastelColors.sage,
-        onPressed: () => _tampilFormKategori(),
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: PastelColors.sage, onPressed: () => _tampilForm(), child: const Icon(Icons.add, color: Colors.white),
       ),
       body: isLoading 
-        ? const Center(child: CircularProgressIndicator(color: PastelColors.emerald))
-        : Column(
-            children: [
-              // --- SEARCH BAR ---
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+        ? const Center(child: CircularProgressIndicator(color: PastelColors.emerald)) 
+        : payments.isEmpty 
+          ? const Center(child: Text("Belum ada metode pembayaran", style: TextStyle(color: Colors.grey)))
+          : ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: payments.length,
+              itemBuilder: (context, i) {
+                final p = payments[i];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
+                    color: Colors.white, 
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)]
                   ),
-                  child: TextField(
-                    onChanged: (value) {
-                      setState(() {
-                        searchQuery = value;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      icon: Icon(Icons.search, color: Colors.grey),
-                      hintText: "Search category...",
-                      border: InputBorder.none,
+                  child: ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: PastelColors.mint.withOpacity(0.5), borderRadius: BorderRadius.circular(10)),
+                      child: const Icon(Icons.account_balance_wallet_outlined, color: PastelColors.emerald),
+                    ),
+                    title: Text(p['method_name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.blue), onPressed: () => _tampilForm(p)),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: PastelColors.rose), 
+                          onPressed: () => _showDeleteDialog(p['id'], p['method_name'])
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ),
-              Expanded(
-                child: filteredCategories.isEmpty
-                  ? const Center(child: Text("Kategori tidak ditemukan.", style: TextStyle(color: Colors.grey)))
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: filteredCategories.length,
-                      itemBuilder: (context, index) {
-                        final cat = filteredCategories[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)]
-                          ),
-                          child: ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(color: PastelColors.mint.withOpacity(0.5), borderRadius: BorderRadius.circular(10)),
-                              child: Icon(_getCategoryIcon(cat['category_name'] ?? ''), color: PastelColors.emerald),
-                            ),
-                            title: Text(cat['category_name'] ?? 'Tanpa Nama', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            trailing: PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert, color: Colors.grey),
-                              onSelected: (val) {
-                                if (val == 'edit') _tampilFormKategori(cat);
-                                if (val == 'delete') _showDeleteDialog(cat);
-                              },
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(value: 'edit', child: Text("Edit")),
-                                const PopupMenuItem(value: 'delete', child: Text("Hapus", style: TextStyle(color: PastelColors.rose))),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-              ),
-            ],
-          ),
+                );
+              },
+            ),
     );
   }
 
-  void _showDeleteDialog(Map<String, dynamic> cat) {
+  void _showDeleteDialog(String id, String name) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Hapus Kategori?"),
-        content: Text("Yakin mau menghapus '${cat['category_name']}'?"),
+        title: const Text("Hapus Metode?"),
+        content: Text("Yakin mau menghapus '$name'?"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
-          TextButton(onPressed: () { Navigator.pop(ctx); _deleteCategory(cat['id']); }, child: const Text("Hapus", style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () { Navigator.pop(ctx); _deletePayment(id); }, 
+            child: const Text("Hapus", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold))
+          ),
         ],
       ),
     );

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/colors.dart';
-import '../widgets/category_chip.dart';
 import '../widgets/product_card.dart';
 import '../models/product.dart';
 import '../data/cart_data.dart';
@@ -10,6 +9,10 @@ import 'order_history_screen.dart';
 import 'login_screen.dart';
 import 'cart_screen.dart';
 import '../data/shift_data.dart';
+
+// --- WARNA SOLID MENYESUAIKAN REFERENSI ORDER HISTORY ---
+const Color solidGreen = Color(0xFF00897B); // Hijau Tegas
+const Color bgKusam = Color(0xFFF4F7F4); // Background abu-abu kehijauan
 
 void showWarningPopup(BuildContext context, String title, String message) {
   showDialog(
@@ -27,7 +30,7 @@ void showWarningPopup(BuildContext context, String title, String message) {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text("OK", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold)),
+          child: const Text("OK", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
         ),
       ],
     ),
@@ -55,7 +58,6 @@ class _SalesScreenState extends State<SalesScreen> {
     _fetchDataFromSupabase();
   }
 
-  // --- FILTER ANTI ERROR BUAT DATA KOSONG DARI SUPABASE ---
   int _safeInt(dynamic value) {
     if (value == null) return 0;
     if (value is num) return value.toInt();
@@ -78,14 +80,7 @@ class _SalesScreenState extends State<SalesScreen> {
 
       final productResponse = await supabase
           .from('ms_product')
-          .select('''
-            id,
-            name_product,
-            selling_price,
-            qty, 
-            image_url,
-            ms_category_product (category_name)
-          ''')
+          .select('id, name_product, selling_price, qty, unit, image_url, ms_category_product (category_name)')
           .eq('is_active', true);
 
       List<Product> fetchedProducts = [];
@@ -99,12 +94,11 @@ class _SalesScreenState extends State<SalesScreen> {
           Product(
             id: prod['id']?.toString() ?? '', 
             name: prod['name_product']?.toString() ?? 'Tanpa Nama', 
-            // PAKE FUNGSI SAFE INT BIAR KEBAL ERROR
             price: _safeInt(prod['selling_price']), 
             category: catName, 
             image: prod['image_url']?.toString(), 
-            // PAKE FUNGSI SAFE INT BIAR KEBAL ERROR
-            qty: _safeInt(prod['qty']), 
+            qty: _safeInt(prod['qty']),
+            unit: prod['unit']?.toString() ?? 'pcs',
           ),
         );
       }
@@ -115,7 +109,6 @@ class _SalesScreenState extends State<SalesScreen> {
         isLoading = false;
       });
     } catch (e) {
-      print("Error Supabase: $e");
       setState(() => isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -128,9 +121,34 @@ class _SalesScreenState extends State<SalesScreen> {
   List<Product> getFilteredProducts() {
     return databaseProducts.where((product) {
       bool matchCategory = selectedCategory == "Semua" || product.category == selectedCategory;
-      bool matchSearch = product.name.toLowerCase().contains(searchQuery);
+      bool matchSearch = product.name.toLowerCase().contains(searchQuery.toLowerCase());
       return matchCategory && matchSearch;
     }).toList();
+  }
+
+  // --- WIDGET CHIPS KATEGORI (SOLID SEPERTI ORDER HISTORY) ---
+  Widget _buildFilterChip(String label) {
+    bool isSelected = selectedCategory == label;
+    return GestureDetector(
+      onTap: () => setState(() => selectedCategory = label),
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? solidGreen : Colors.white,
+          borderRadius: BorderRadius.circular(30), // Oval penuh
+          border: isSelected ? null : Border.all(color: Colors.grey.shade300),
+        ),
+        child: Text(
+          label, 
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.black87, 
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600
+          )
+        ),
+      ),
+    );
   }
 
   @override
@@ -138,25 +156,30 @@ class _SalesScreenState extends State<SalesScreen> {
     final filteredProducts = getFilteredProducts();
 
     return Scaffold(
-      backgroundColor: PastelColors.mint,
-      drawer: const SizedBox(width: 250, child: AppDrawer()),
+      backgroundColor: bgKusam, // Background persis Order History
+      drawer: const SizedBox(width: 280, child: AppDrawer()),
       body: SafeArea(
         child: Column(
           children: [
+            // --- HEADER APP BAR ---
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Builder(
-                    builder: (context) => IconButton(icon: const Icon(Icons.menu, size: 28), onPressed: () => Scaffold.of(context).openDrawer()),
+                    builder: (context) => IconButton(
+                      icon: const Icon(Icons.menu, size: 28, color: Colors.black87), 
+                      onPressed: () => Scaffold.of(context).openDrawer()
+                    ),
                   ),
+                  const Text("Sales", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
                   Row(
                     children: [
                       Stack(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.shopping_cart, size: 28),
+                            icon: const Icon(Icons.shopping_cart_outlined, size: 28, color: Colors.black87),
                             onPressed: () async => await Navigator.push(context, MaterialPageRoute(builder: (context) => const CartScreen())),
                           ),
                           Positioned(
@@ -180,63 +203,69 @@ class _SalesScreenState extends State<SalesScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 8),
+                      // --- ICON PROFILE KANAN ATAS (SOLID GREEN) ---
                       Container(
-                        width: 36, height: 36,
-                        decoration: BoxDecoration(color: PastelColors.emerald, borderRadius: BorderRadius.circular(10)),
-                        child: const Icon(Icons.person_outline, color: Colors.white),
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(color: solidGreen, borderRadius: BorderRadius.circular(12)), 
+                        child: const Icon(Icons.person_outline, color: Colors.white, size: 24),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
+            
+            // --- SEARCH BAR ---
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: TextField(
-                  onChanged: (value) => setState(() => searchQuery = value.toLowerCase()),
-                  decoration: const InputDecoration(icon: Icon(Icons.search, color: Colors.grey), hintText: "Search product...", border: InputBorder.none),
+                  onChanged: (value) => setState(() => searchQuery = value),
+                  decoration: const InputDecoration(
+                    icon: Icon(Icons.search, color: Colors.grey), 
+                    hintText: "Cari produk...", 
+                    border: InputBorder.none
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+            
             if (isLoading)
-              const Expanded(child: Center(child: CircularProgressIndicator(color: PastelColors.emerald)))
+              const Expanded(child: Center(child: CircularProgressIndicator(color: solidGreen)))
             else ...[
+              // --- KATEGORI CHIPS ---
               SizedBox(
                 height: 40,
-                child: ListView.builder(
+                child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: databaseCategories.length,
-                  itemBuilder: (context, index) {
-                    String catName = databaseCategories[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: CategoryChip(
-                        title: catName,
-                        isSelected: selectedCategory == catName,
-                        onTap: () => setState(() => selectedCategory = catName),
-                      ),
-                    );
-                  },
+                  child: Row(
+                    children: databaseCategories.map((catName) => _buildFilterChip(catName)).toList(),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
+              
+              // --- GRID PRODUK ---
               Expanded(
                 child: filteredProducts.isEmpty
-                    ? const Center(child: Text("Tidak ada produk, coba isi database ges!", style: TextStyle(color: Colors.grey)))
+                    ? const Center(child: Text("Produk tidak ditemukan.", style: TextStyle(color: Colors.grey)))
                     : GridView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         itemCount: filteredProducts.length,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 14, mainAxisSpacing: 14, childAspectRatio: 0.75),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2, 
+                          crossAxisSpacing: 14, 
+                          mainAxisSpacing: 14, 
+                          childAspectRatio: 0.72
+                        ),
                         itemBuilder: (context, index) => ProductCard(product: filteredProducts[index]),
                       ),
               ),
@@ -249,7 +278,7 @@ class _SalesScreenState extends State<SalesScreen> {
 }
 
 // ============================================
-// APP DRAWER (Tetap Sama)
+// APP DRAWER (IDENTIK ORDER HISTORY)
 // ============================================
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -260,58 +289,55 @@ class AppDrawer extends StatelessWidget {
       backgroundColor: Colors.white,
       child: Column(
         children: [
+          // --- HEADER DRAWER SOLID GREEN ---
           Container(
-            height: 150,
+            height: 170,
             width: double.infinity,
-            padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
-            decoration: const BoxDecoration(color: PastelColors.emerald),
+            padding: const EdgeInsets.only(top: 50, left: 24, right: 24),
+            decoration: const BoxDecoration(color: solidGreen),
             child: Row(
               children: [
                 Container(
-                  width: 50, height: 50,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                  child: const Icon(Icons.person, color: PastelColors.emerald, size: 28),
+                  width: 56, height: 56,
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                  child: const Icon(Icons.person, color: solidGreen, size: 32),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text("NaWa", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text("Cashier", style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    Text("NaWa", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
+                    SizedBox(height: 4),
+                    Text("Cashier", style: TextStyle(color: Colors.white70, fontSize: 14)),
                   ],
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 16),
           Expanded(
             child: ListView(
+              padding: EdgeInsets.zero,
               children: [
-                ListTile(
-                  leading: const Icon(Icons.dashboard, color: PastelColors.grey),
-                  title: const Text("Dashboard", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.w600)),
-                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const DashboardScreen())),
+                _buildMenuItem(context, Icons.dashboard, "Dashboard", false, () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const DashboardScreen()))),
+                _buildMenuItem(context, Icons.point_of_sale, "Sales", true, () => Navigator.pop(context)),
+                _buildMenuItem(context, Icons.receipt_long, "Order History", false, () {
+                  if (!shiftActive.value) {
+                    showWarningPopup(context, "Akses Ditolak", "Kamu harus memulai shift (Start Shift) terlebih dahulu.");
+                    return;
+                  }
+                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
+                }),
+                
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: Divider(),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.point_of_sale, color: PastelColors.emerald),
-                  title: const Text("Sales", style: TextStyle(color: PastelColors.emerald, fontWeight: FontWeight.bold)),
-                  onTap: () => Navigator.pop(context),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.receipt_long, color: PastelColors.grey),
-                  title: const Text("Order History", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    if (!shiftActive.value) {
-                      showWarningPopup(context, "Akses Ditolak", "Kamu harus memulai shift (Start Shift) terlebih dahulu.");
-                      return;
-                    }
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: PastelColors.rose),
-                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.w600)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+                  leading: const Icon(Icons.logout, color: PastelColors.rose, size: 26),
+                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold, fontSize: 16)),
                   onTap: () {
                     if (shiftActive.value) {
                       showWarningPopup(context, "Gagal Logout", "Tolong akhiri shift (End Shift) terlebih dahulu sebelum logout.");
@@ -325,6 +351,23 @@ class AppDrawer extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // --- MENU ITEM TANPA BACKGROUND HIGHLIGHT (SESUAI REFERENSI) ---
+  Widget _buildMenuItem(BuildContext context, IconData icon, String title, bool isSelected, VoidCallback onTap) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+      leading: Icon(icon, color: isSelected ? solidGreen : Colors.grey.shade600, size: 26),
+      title: Text(
+        title, 
+        style: TextStyle(
+          color: isSelected ? solidGreen : Colors.grey.shade700, 
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+          fontSize: 16
+        )
+      ),
+      onTap: onTap,
     );
   }
 }
