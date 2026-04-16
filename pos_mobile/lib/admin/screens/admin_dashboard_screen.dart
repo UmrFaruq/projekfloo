@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // IMPORT SUPABASE UNTUK AMBIL DATA KASIR
+import 'package:intl/intl.dart'; 
+import 'package:supabase_flutter/supabase_flutter.dart'; 
+
 import '../../theme/colors.dart';
 import '../../screens/login_screen.dart';
 import 'manage_product_screen.dart'; 
 import 'manage_category_screen.dart';
-import 'manage_cashier_screen.dart'; // IMPORT HALAMAN KASIR
-import 'manage_payment_screen.dart'; // IMPORT HALAMAN PAYMENT
+import 'manage_cashier_screen.dart'; 
+import 'manage_payment_screen.dart'; 
 import 'manage_stock_screen.dart';
 import 'purchase_incoming_screen.dart';
 import 'sales_report_screen.dart';
@@ -21,11 +23,48 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int jumlahKasirAktif = 0;
+  
+  // --- VARIABEL UNTUK PAJAK (TAX) ---
+  double currentTax = 11.0; 
+
+  // --- VARIABEL UNTUK FILTER DASHBOARD ---
+  String filterWaktu = "Hari Ini";
+  String lastUpdate = "";
+  
+  // Data dummy yang berubah saat filter ditekan
+  String txtOmzet = "Rp 12.450.000";
+  String txtTransaksi = "32";
 
   @override
   void initState() {
     super.initState();
+    _updateTime();
     _hitungKasirAktif();
+  }
+
+  void _updateTime() {
+    setState(() {
+      lastUpdate = DateFormat('HH:mm').format(DateTime.now());
+    });
+  }
+
+  // --- LOGIKA FILTER WAKTU (DUMMY) ---
+  void _ubahFilter(String filterBaru) {
+    setState(() {
+      filterWaktu = filterBaru;
+      _updateTime(); 
+
+      if (filterBaru == "Hari Ini") {
+        txtOmzet = "Rp 12.450.000";
+        txtTransaksi = "32";
+      } else if (filterBaru == "Minggu Ini") {
+        txtOmzet = "Rp 85.200.000";
+        txtTransaksi = "215";
+      } else if (filterBaru == "Bulan Ini") {
+        txtOmzet = "Rp 340.500.000";
+        txtTransaksi = "1,042";
+      }
+    });
   }
 
   // --- FUNGSI MENGHITUNG JUMLAH KASIR DARI SUPABASE ---
@@ -34,7 +73,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       final response = await Supabase.instance.client
           .from('ms_user')
           .select('id')
-          .eq('role', 'kasir'); // Disesuaikan dengan role database abang
+          .eq('role', 'kasir'); 
       
       if (mounted) {
         setState(() {
@@ -42,8 +81,69 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         });
       }
     } catch (e) {
-      print("Gagal menghitung kasir: $e");
+      debugPrint("Gagal menghitung kasir: $e");
     }
+  }
+
+  // --- FUNGSI MUNCULIN POPUP PAJAK ---
+  void _showTaxSettingDialog() {
+    TextEditingController taxController = TextEditingController(text: currentTax.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.percent, color: PastelColors.emerald),
+            SizedBox(width: 8),
+            Text("Atur Pajak (Tax)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Masukkan persentase pajak yang akan diterapkan pada transaksi kasir.", style: TextStyle(color: Colors.grey, fontSize: 13)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: taxController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: InputDecoration(
+                labelText: "Besaran Pajak",
+                suffixText: "%",
+                suffixStyle: const TextStyle(fontWeight: FontWeight.bold, color: PastelColors.emerald),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Batal", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: PastelColors.emerald,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onPressed: () {
+              setState(() {
+                currentTax = double.tryParse(taxController.text) ?? currentTax;
+              });
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Pajak berhasil diubah menjadi $currentTax%"), backgroundColor: PastelColors.emerald)
+              );
+            },
+            child: const Text("Simpan", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -79,8 +179,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.notifications_none, color: PastelColors.grey),
-                      const SizedBox(width: 12),
+                      IconButton(
+                        icon: const Icon(Icons.percent, color: PastelColors.emerald),
+                        tooltip: "Atur Pajak",
+                        onPressed: _showTaxSettingDialog,
+                      ),
+                      const SizedBox(width: 8),
                       Container(
                         width: 36,
                         height: 36,
@@ -102,19 +206,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                        child: Row(
-                          children: const [
-                            Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                            SizedBox(width: 6),
-                            Text("Hari Ini", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            Icon(Icons.arrow_drop_down, size: 16)
-                          ],
+                      PopupMenuButton<String>(
+                        onSelected: _ubahFilter,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(value: "Hari Ini", child: Text("Hari Ini")),
+                          const PopupMenuItem(value: "Minggu Ini", child: Text("Minggu Ini")),
+                          const PopupMenuItem(value: "Bulan Ini", child: Text("Bulan Ini")),
+                        ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                              const SizedBox(width: 6),
+                              Text(filterWaktu, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              const Icon(Icons.arrow_drop_down, size: 16)
+                            ],
+                          ),
                         ),
                       ),
-                      const Text("Last Update: Hari ini, 11:30", style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      Text("Last Update: Hari ini, $lastUpdate", style: const TextStyle(fontSize: 11, color: Colors.grey)),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -126,9 +239,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       Expanded(
                         child: Column(
                           children: [
-                            _buildMainStatCard("Omzet Hari Ini", "Rp 12.450.000", "+12% dari kemarin", Icons.payments, PastelColors.emerald),
+                            // SEMUA WARNA DIUBAH KE EMERALD
+                            _buildMainStatCard("Omzet $filterWaktu", txtOmzet, "+12% tren naik", Icons.payments, PastelColors.emerald),
                             const SizedBox(height: 12),
-                            _buildMainStatCard("Perlu Restock", "8 Produk", "Stok menipis", Icons.inventory_2, PastelColors.rose),
+                            _buildMainStatCard("Perlu Restock", "8 Produk", "Stok menipis", Icons.inventory_2, PastelColors.emerald),
                           ],
                         ),
                       ),
@@ -136,10 +250,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       Expanded(
                         child: Column(
                           children: [
-                            _buildSmallStatCard("Transaksi", "32", "+5 transaksi", Icons.receipt_long, PastelColors.teal),
+                            // SEMUA WARNA DIUBAH KE EMERALD
+                            _buildSmallStatCard("Transaksi", txtTransaksi, "Sukses diproses", Icons.receipt_long, PastelColors.emerald),
                             const SizedBox(height: 12),
-                            // --- DATA KASIR AKTIF SEKARANG DINAMIS ---
-                            _buildSmallStatCard("Kasir Aktif", "$jumlahKasirAktif Kasir", "Terdaftar di sistem", Icons.people, PastelColors.sage),
+                            _buildSmallStatCard("Kasir Aktif", "$jumlahKasirAktif Kasir", "Terdaftar di sistem", Icons.people, PastelColors.emerald),
                           ],
                         ),
                       ),
@@ -160,7 +274,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       children: const [
                         Icon(Icons.show_chart, size: 40, color: PastelColors.emerald),
                         SizedBox(height: 8),
-                        Text("Grafik Omzet 30 Hari Terakhir\n(Akan diintegrasikan)", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text("Grafik akan tampil setelah ada\ndata transaksi dari Kasir.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -180,7 +294,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageProductScreen()));
                       })),
                       const SizedBox(width: 8),
-                      // FUNGSI NAVIGASI MANAGE CASHIER DIPASTIKAN JALAN
                       Expanded(child: _buildQuickActionBtn("Manage\nCashiers", Icons.people_outline, () {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageCashierScreen()));
                       })),
@@ -189,7 +302,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageCategoryScreen()));
                       })),
                       const SizedBox(width: 8),
-                      // FUNGSI NAVIGASI PAYMENT METHOD DIPASTIKAN JALAN
                       Expanded(child: _buildQuickActionBtn("Payment\nMethods", Icons.payments_outlined, () {
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagePaymentScreen()));
                       })),
@@ -205,11 +317,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
                     child: Column(
                       children: [
-                        _buildActivityItem(Icons.local_shipping, "Incoming Goods #PO-0012", "12 Produk • 1 jam lalu", "Diterima", PastelColors.sage),
+                        // SEMUA WARNA DIUBAH KE EMERALD
+                        _buildActivityItem(Icons.local_shipping, "Incoming Goods #PO-0012", "12 Produk • 1 jam lalu", "Diterima", PastelColors.emerald),
                         const Divider(height: 1, indent: 16, endIndent: 16),
                         _buildActivityItem(Icons.receipt_long, "Transaksi #INV-0025", "Rp 350.000 • 2 jam lalu", "Selesai", PastelColors.emerald),
                         const Divider(height: 1, indent: 16, endIndent: 16),
-                        _buildActivityItem(Icons.warning_amber_rounded, "Stok 'Beras 5kg' menipis", "Tersisa 3 pcs • 3 jam lalu", "Restock", PastelColors.rose),
+                        _buildActivityItem(Icons.warning_amber_rounded, "Stok 'Beras 5kg' menipis", "Tersisa 3 pcs • 3 jam lalu", "Restock", PastelColors.emerald),
                       ],
                     ),
                   ),
@@ -334,7 +447,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 }
 
-/// ADMIN DRAWER (KHUSUS DASHBOARD)
+/// ADMIN DRAWER
 class AdminDrawer extends StatelessWidget {
   const AdminDrawer({super.key});
 
