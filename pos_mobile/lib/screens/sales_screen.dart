@@ -10,9 +10,8 @@ import 'login_screen.dart';
 import 'cart_screen.dart';
 import '../data/shift_data.dart';
 
-// --- WARNA SOLID MENYESUAIKAN REFERENSI ORDER HISTORY ---
-const Color solidGreen = Color(0xFF00897B); // Hijau Tegas
-const Color bgKusam = Color(0xFFF4F7F4); // Background abu-abu kehijauan
+// --- IMPORT FILE DRAWER KASIR YANG BARU ---
+import 'cashier_drawer.dart'; 
 
 void showWarningPopup(BuildContext context, String title, String message) {
   showDialog(
@@ -21,16 +20,16 @@ void showWarningPopup(BuildContext context, String title, String message) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: PastelColors.rose),
+          const Icon(Icons.warning_amber_rounded, color: AppColors.error), // Pakai warna error toska-theme
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
         ],
       ),
-      content: Text(message, style: const TextStyle(fontSize: 14)),
+      content: Text(message, style: const TextStyle(fontSize: 14, color: Colors.black87)),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text("OK", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          child: const Text("OK", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold)),
         ),
       ],
     ),
@@ -112,7 +111,7 @@ class _SalesScreenState extends State<SalesScreen> {
       setState(() => isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Gagal mengambil data dari server."), backgroundColor: PastelColors.rose),
+          const SnackBar(content: Text("Gagal mengambil data dari server."), backgroundColor: AppColors.error),
         );
       }
     }
@@ -126,7 +125,7 @@ class _SalesScreenState extends State<SalesScreen> {
     }).toList();
   }
 
-  // --- WIDGET CHIPS KATEGORI (SOLID SEPERTI ORDER HISTORY) ---
+  // --- WIDGET CHIPS KATEGORI (MENGGUNAKAN APPCOLORS) ---
   Widget _buildFilterChip(String label) {
     bool isSelected = selectedCategory == label;
     return GestureDetector(
@@ -135,8 +134,8 @@ class _SalesScreenState extends State<SalesScreen> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? solidGreen : Colors.white,
-          borderRadius: BorderRadius.circular(30), // Oval penuh
+          color: isSelected ? AppColors.primary : Colors.white, // Toska jika dipilih
+          borderRadius: BorderRadius.circular(30), 
           border: isSelected ? null : Border.all(color: Colors.grey.shade300),
         ),
         child: Text(
@@ -156,8 +155,11 @@ class _SalesScreenState extends State<SalesScreen> {
     final filteredProducts = getFilteredProducts();
 
     return Scaffold(
-      backgroundColor: bgKusam, // Background persis Order History
-      drawer: const SizedBox(width: 280, child: AppDrawer()),
+      backgroundColor: AppColors.bgLight, // Background abu-abu toska
+      drawer: const SizedBox(
+        width: 250, 
+        child: CashierDrawer(activeMenu: "Sales") // MANGGIL DRAWER BARU
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -190,7 +192,7 @@ class _SalesScreenState extends State<SalesScreen> {
                                 if (value == 0) return const SizedBox();
                                 return Container(
                                   padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(color: PastelColors.rose, shape: BoxShape.circle),
+                                  decoration: const BoxDecoration(color: AppColors.badgeRed, shape: BoxShape.circle),
                                   constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
                                   child: Text(
                                     value.toString(),
@@ -204,10 +206,10 @@ class _SalesScreenState extends State<SalesScreen> {
                         ],
                       ),
                       const SizedBox(width: 8),
-                      // --- ICON PROFILE KANAN ATAS (SOLID GREEN) ---
+                      // --- ICON PROFILE KANAN ATAS (MENGGUNAKAN APPCOLORS) ---
                       Container(
                         width: 40, height: 40,
-                        decoration: BoxDecoration(color: solidGreen, borderRadius: BorderRadius.circular(12)), 
+                        decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(12)), 
                         child: const Icon(Icons.person_outline, color: Colors.white, size: 24),
                       ),
                     ],
@@ -228,8 +230,9 @@ class _SalesScreenState extends State<SalesScreen> {
                 child: TextField(
                   onChanged: (value) => setState(() => searchQuery = value),
                   decoration: const InputDecoration(
-                    icon: Icon(Icons.search, color: Colors.grey), 
+                    icon: Icon(Icons.search, color: AppColors.textGrey), 
                     hintText: "Cari produk...", 
+                    hintStyle: TextStyle(color: AppColors.textGrey),
                     border: InputBorder.none
                   ),
                 ),
@@ -238,7 +241,7 @@ class _SalesScreenState extends State<SalesScreen> {
             const SizedBox(height: 20),
             
             if (isLoading)
-              const Expanded(child: Center(child: CircularProgressIndicator(color: solidGreen)))
+              const Expanded(child: Center(child: CircularProgressIndicator(color: AppColors.primary)))
             else ...[
               // --- KATEGORI CHIPS ---
               SizedBox(
@@ -256,7 +259,7 @@ class _SalesScreenState extends State<SalesScreen> {
               // --- GRID PRODUK ---
               Expanded(
                 child: filteredProducts.isEmpty
-                    ? const Center(child: Text("Produk tidak ditemukan.", style: TextStyle(color: Colors.grey)))
+                    ? const Center(child: Text("Produk tidak ditemukan.", style: TextStyle(color: AppColors.textGrey)))
                     : GridView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         itemCount: filteredProducts.length,
@@ -273,101 +276,6 @@ class _SalesScreenState extends State<SalesScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ============================================
-// APP DRAWER (IDENTIK ORDER HISTORY)
-// ============================================
-class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: Column(
-        children: [
-          // --- HEADER DRAWER SOLID GREEN ---
-          Container(
-            height: 170,
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 50, left: 24, right: 24),
-            decoration: const BoxDecoration(color: solidGreen),
-            child: Row(
-              children: [
-                Container(
-                  width: 56, height: 56,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-                  child: const Icon(Icons.person, color: solidGreen, size: 32),
-                ),
-                const SizedBox(width: 16),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("NaWa", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
-                    SizedBox(height: 4),
-                    Text("Cashier", style: TextStyle(color: Colors.white70, fontSize: 14)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildMenuItem(context, Icons.dashboard, "Dashboard", false, () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const DashboardScreen()))),
-                _buildMenuItem(context, Icons.point_of_sale, "Sales", true, () => Navigator.pop(context)),
-                _buildMenuItem(context, Icons.receipt_long, "Order History", false, () {
-                  if (!shiftActive.value) {
-                    showWarningPopup(context, "Akses Ditolak", "Kamu harus memulai shift (Start Shift) terlebih dahulu.");
-                    return;
-                  }
-                  Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
-                }),
-                
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  child: Divider(),
-                ),
-                ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                  leading: const Icon(Icons.logout, color: PastelColors.rose, size: 26),
-                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold, fontSize: 16)),
-                  onTap: () {
-                    if (shiftActive.value) {
-                      showWarningPopup(context, "Gagal Logout", "Tolong akhiri shift (End Shift) terlebih dahulu sebelum logout.");
-                      return;
-                    }
-                    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const LoginScreen()), (route) => false);
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // --- MENU ITEM TANPA BACKGROUND HIGHLIGHT (SESUAI REFERENSI) ---
-  Widget _buildMenuItem(BuildContext context, IconData icon, String title, bool isSelected, VoidCallback onTap) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-      leading: Icon(icon, color: isSelected ? solidGreen : Colors.grey.shade600, size: 26),
-      title: Text(
-        title, 
-        style: TextStyle(
-          color: isSelected ? solidGreen : Colors.grey.shade700, 
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-          fontSize: 16
-        )
-      ),
-      onTap: onTap,
     );
   }
 }

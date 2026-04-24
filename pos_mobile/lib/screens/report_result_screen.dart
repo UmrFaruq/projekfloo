@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/order.dart';
-import '../theme/colors.dart';
+import '../theme/colors.dart'; // MENGGUNAKAN AppColors
 import '../data/report_helper.dart'; 
 
 class ReportResultScreen extends StatelessWidget {
@@ -43,20 +43,20 @@ class ReportResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PastelColors.mint,
+      backgroundColor: AppColors.bgLight, // Background toska muda
       appBar: AppBar(
-        backgroundColor: PastelColors.mint,
+        backgroundColor: AppColors.bgLight,
         elevation: 0,
-        title: const Text("Report Summary", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold)),
-        iconTheme: const IconThemeData(color: PastelColors.grey),
+        title: const Text("Report Summary", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)), // Teks hitam
+        iconTheme: const IconThemeData(color: Colors.black87), // Icon back hitam
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch, // Bikin semua child jadi panjang (full width)
+          crossAxisAlignment: CrossAxisAlignment.stretch, 
           children: [
             
-            // --- KOTAK TOTAL REVENUE (Panjang & Besar) ---
+            // --- KOTAK TOTAL REVENUE ---
             Container(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
               decoration: BoxDecoration(
@@ -68,21 +68,19 @@ class ReportResultScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Text("TOTAL REVENUE", style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.bold)),
+                  const Text("TOTAL REVENUE", style: TextStyle(color: AppColors.textGrey, fontSize: 13, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
                   Text(
                     formatRupiah(getRevenue()),
-                    // Angkanya dibesarin banget dan dikasih warna ijo!
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 32, color: PastelColors.emerald),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 32, color: AppColors.primaryDark), // Toska gelap biar stand out!
                   ),
                 ],
               ),
             ),
-            // ----------------------------------------------
 
             const SizedBox(height: 16),
 
-            // --- KOTAK TRANSACTIONS & ITEMS (Tengah) ---
+            // --- KOTAK TRANSACTIONS & ITEMS ---
             Row(
               children: [
                 Expanded(child: _statCard("Transactions", getTransactions().toString())),
@@ -90,10 +88,9 @@ class ReportResultScreen extends StatelessWidget {
                 Expanded(child: _statCard("Items Sold", getItemsSold().toString())),
               ],
             ),
-            // ---------------------------------------------
 
             const SizedBox(height: 24),
-            const Text("Transaction Details", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: PastelColors.grey)),
+            const Text("Transaction Details", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)), // Teks hitam
             const SizedBox(height: 12),
             
             // DAFTAR TRANSAKSI
@@ -116,12 +113,12 @@ class ReportResultScreen extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(order.customer.isEmpty ? "Umum" : order.customer, style: const TextStyle(fontWeight: FontWeight.bold, color: PastelColors.grey)),
+                            Text(order.customer.isEmpty ? "Umum" : order.customer, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)), // Customer hitam
                             const SizedBox(height: 4),
-                            Text(order.paymentMethod.toUpperCase(), style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
+                            Text(order.paymentMethod.toUpperCase(), style: const TextStyle(color: AppColors.textGrey, fontSize: 12, fontWeight: FontWeight.w600)),
                           ],
                         ),
-                        Text(formatRupiah(order.total), style: const TextStyle(fontWeight: FontWeight.bold, color: PastelColors.emerald))
+                        Text(formatRupiah(order.total), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark)) // Total bayar toska gelap
                       ],
                     ),
                   );
@@ -137,17 +134,17 @@ class ReportResultScreen extends StatelessWidget {
               height: 55,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PastelColors.emerald,
+                  backgroundColor: AppColors.primary, // Warna utama Toska
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 0,
+                  elevation: 2,
                 ),
                 onPressed: () async {
                   String fileName = "Laporan_Custom_$titleStr";
-                  await ReportHelper.downloadExcel(orders, fileName);
+                  await ReportHelper.downloadExcel(orders, fileName); // Fungsi Excel aman
                 },
                 icon: const Icon(Icons.download),
-                label: const Text("Download Excel (CSV)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                label: const Text("Download Excel", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
               ),
             ),
           ],
@@ -156,7 +153,7 @@ class ReportResultScreen extends StatelessWidget {
     );
   }
 
-  // WIDGET KHUSUS KOTAK BAWAH BIAR CENTER
+  // WIDGET KHUSUS KOTAK BAWAH
   Widget _statCard(String title, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -166,11 +163,11 @@ class ReportResultScreen extends StatelessWidget {
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center, // <-- INI BIAR RATA TENGAH
+        crossAxisAlignment: CrossAxisAlignment.center, 
         children: [
-          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(title, style: const TextStyle(color: AppColors.textGrey, fontSize: 12, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: PastelColors.grey)), // Angka sedikit digedein
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.black87)), // Angka dihitamkan
         ],
       ),
     );

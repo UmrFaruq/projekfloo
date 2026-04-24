@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // <-- Import fungsi format Rupiah (titik)
+import 'package:intl/intl.dart'; 
 import '../data/cart_data.dart';
-import '../theme/colors.dart';
+import '../theme/colors.dart'; // Menggunakan AppColors
 import 'checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
@@ -28,21 +28,21 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PastelColors.mint,
+      backgroundColor: AppColors.bgLight, // Tema background toska muda
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: PastelColors.mint,
+        backgroundColor: AppColors.bgLight,
         title: const Text(
           "Keranjang",
-          style: TextStyle(color: PastelColors.grey),
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold), // Teks Hitam Tegas
         ),
-        iconTheme: const IconThemeData(color: PastelColors.grey),
+        iconTheme: const IconThemeData(color: Colors.black87), // Icon kembali warna hitam
       ),
       body: cart.isEmpty
           ? const Center(
               child: Text(
                 "Keranjang masih kosong",
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: AppColors.textGrey, fontSize: 16),
               ),
             )
           : Column(
@@ -64,12 +64,12 @@ class _CartScreenState extends State<CartScreen> {
                         ),
                         child: Row(
                           children: [
-                            /// PRODUCT IMAGE (DIBENERIN)
+                            /// PRODUCT IMAGE
                             Container(
                               width: 60,
                               height: 60,
                               decoration: BoxDecoration(
-                                color: PastelColors.mint.withOpacity(0.5), // Biar kalau transparan lebih nyatu
+                                color: AppColors.bgLight.withOpacity(0.5), // Background image toska muda
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: ClipRRect(
@@ -79,9 +79,9 @@ class _CartScreenState extends State<CartScreen> {
                                         item.image!,
                                         fit: BoxFit.cover,
                                         errorBuilder: (context, error, stackTrace) =>
-                                            const Icon(Icons.image_not_supported_outlined, color: Colors.red),
+                                            const Icon(Icons.image_not_supported_outlined, color: AppColors.error),
                                       )
-                                    : const Icon(Icons.fastfood, color: Colors.grey),
+                                    : const Icon(Icons.fastfood, color: AppColors.textGrey),
                               ),
                             ),
 
@@ -97,17 +97,18 @@ class _CartScreenState extends State<CartScreen> {
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
-                                      color: PastelColors.grey,
+                                      color: Colors.black87, // Teks nama produk Hitam
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    formatRupiah(item.price), // <-- Format titik diaplikasikan di sini!
+                                    formatRupiah(item.price), 
                                     style: const TextStyle(
-                                      color: Colors.grey,
+                                      color: AppColors.textGrey, // Teks harga abu-abu toska
                                       fontSize: 12,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],
@@ -117,14 +118,14 @@ class _CartScreenState extends State<CartScreen> {
                             /// QTY CONTROLLER
                             Container(
                               decoration: BoxDecoration(
-                                color: PastelColors.mint,
+                                color: AppColors.bgLight, // Background kotak QTY toska muda
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
                                 children: [
                                   /// MINUS
                                   IconButton(
-                                    icon: const Icon(Icons.remove, size: 18),
+                                    icon: const Icon(Icons.remove, size: 18, color: Colors.black87),
                                     onPressed: () {
                                       setState(() {
                                         if (item.qty > 1) {
@@ -138,11 +139,11 @@ class _CartScreenState extends State<CartScreen> {
                                   ),
                                   Text(
                                     "${item.qty}",
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
                                   ),
                                   /// PLUS
                                   IconButton(
-                                    icon: const Icon(Icons.add, size: 18),
+                                    icon: const Icon(Icons.add, size: 18, color: Colors.black87),
                                     onPressed: () {
                                       setState(() {
                                         item.qty++;
@@ -156,7 +157,7 @@ class _CartScreenState extends State<CartScreen> {
 
                             /// DELETE
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, color: PastelColors.rose),
+                              icon: const Icon(Icons.delete_outline, color: AppColors.error), // Icon hapus warna error
                               onPressed: () {
                                 setState(() {
                                   cart.removeAt(index);
@@ -174,9 +175,12 @@ class _CartScreenState extends State<CartScreen> {
                 /// TOTAL + CHECKOUT
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4))
+                    ]
                   ),
                   child: Column(
                     children: [
@@ -185,29 +189,29 @@ class _CartScreenState extends State<CartScreen> {
                         children: [
                           const Text(
                             "Total",
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                            style: TextStyle(fontSize: 16, color: AppColors.textGrey, fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            formatRupiah(getTotal()), // <-- Format titik total akhir!
+                            formatRupiah(getTotal()), 
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: PastelColors.grey,
+                              color: Colors.black87, // Total harga warna hitam tegas
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
 
-                      /// CHECKOUT BUTTON (DIBIKIN LEBIH SOLID & GARANG)
+                      /// CHECKOUT BUTTON (TOSKA SOLID)
                       SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: PastelColors.emerald, // Pakai Emerald biar solid mantap!
-                            foregroundColor: Colors.white, // Teks jadi putih ngejreng
-                            elevation: 2, // Dikasih bayangan dikit biar pop-out
+                            backgroundColor: AppColors.primary, // Warna utama Toska
+                            foregroundColor: Colors.white, 
+                            elevation: 2, 
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
@@ -225,7 +229,7 @@ class _CartScreenState extends State<CartScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2, // Spasi huruf dipanjangin dikit biar tegas
+                              letterSpacing: 1.2, 
                             ),
                           ),
                         ),

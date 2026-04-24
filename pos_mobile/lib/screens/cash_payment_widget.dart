@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // <-- IMPORT BARU UNTUK FORMATTER
+import 'package:flutter/services.dart'; 
 import 'package:intl/intl.dart';
-import '../theme/colors.dart';
-import '../screens/receipt_screen.dart'; // Sesuaikan path jika receipt_screen ada di dalam folder screens
+import '../theme/colors.dart'; // MENGGUNAKAN AppColors
+import '../screens/receipt_screen.dart'; 
 
 // Fungsi pop-up peringatan biar seragam dengan halaman lain
 void showWarningPopup(BuildContext context, String title, String message) {
@@ -12,18 +12,18 @@ void showWarningPopup(BuildContext context, String title, String message) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: PastelColors.rose),
+          const Icon(Icons.warning_amber_rounded, color: AppColors.error), // Icon merah toska-theme
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
         ],
       ),
-      content: Text(message, style: const TextStyle(fontSize: 14)),
+      content: Text(message, style: const TextStyle(fontSize: 14, color: Colors.black87)),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
           child: const Text(
             "OK",
-            style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold),
+            style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold),
           ),
         ),
       ],
@@ -68,6 +68,7 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
         TextField(
           controller: cashController,
           keyboardType: TextInputType.number,
+          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16), // Teks input dibikin hitam tebal
           
           // --- INI MESIN AUTO TITIKNYA DIPASANG ---
           inputFormatters: [
@@ -77,9 +78,10 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
           
           decoration: InputDecoration(
             hintText: "Nominal Uang Diterima",
-            hintStyle: const TextStyle(color: Colors.grey),
-            prefixIcon: const Icon(Icons.payments_outlined, color: PastelColors.emerald),
-            prefixText: "Rp ", // Tambahan biar makin keren ada Rp nya langsung
+            hintStyle: const TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.normal),
+            prefixIcon: const Icon(Icons.payments_outlined, color: AppColors.primary), // Icon toska
+            prefixText: "Rp ", 
+            prefixStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16), // Prefix Rp ikut tebal
             filled: true,
             fillColor: Colors.white,
             border: OutlineInputBorder(
@@ -95,18 +97,18 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: PastelColors.mint,
+            color: AppColors.bgLight, // Background toska muda
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text("Kembalian", style: TextStyle(color: PastelColors.grey)),
+              const Text("Kembalian", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600)),
               Text(
                 formatRupiah(getChange() < 0 ? 0 : getChange()), // Biar kalau kurang nggak minus di UI
                 style: TextStyle(
                   fontWeight: FontWeight.bold, 
-                  color: getChange() < 0 ? PastelColors.rose : PastelColors.emerald,
+                  color: getChange() < 0 ? AppColors.error : AppColors.primaryDark, // Merah kalau kurang, Toska Gelap kalau cukup/lebih
                   fontSize: 16
                 ),
               )
@@ -119,9 +121,9 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
           height: 55,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: PastelColors.emerald,
-              foregroundColor: Colors.white, // warna teks tombol
-              elevation: 0,
+              backgroundColor: AppColors.primary, // Tombol Toska solid
+              foregroundColor: Colors.white, 
+              elevation: 2,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -161,7 +163,7 @@ class _CashPaymentWidgetState extends State<CashPaymentWidget> {
             },
             child: const Text(
               "Selesaikan Pembayaran",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1),
             ),
           ),
         )

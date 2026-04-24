@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Tambahan untuk format angka
+import 'package:intl/intl.dart'; 
 import '../models/order.dart';
-import '../theme/colors.dart';
+import '../theme/colors.dart'; // MENGGUNAKAN AppColors
 
 class OrderDetailScreen extends StatelessWidget {
   final Order order;
@@ -34,14 +34,17 @@ class OrderDetailScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: PastelColors.mint,
+      backgroundColor: AppColors.bgLight, // Tema Background toska muda
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: PastelColors.mint,
-        iconTheme: const IconThemeData(color: PastelColors.grey),
-        title: const Text("Payment Details", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.bgLight,
+        iconTheme: const IconThemeData(color: Colors.black87), // Icon back jadi hitam
+        title: const Text(
+          "Payment Details", 
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold) // Judul Halaman Tetap Tegas (UI Navigation)
+        ),
       ),
-      // --- INI SOLUSINYA BANG: PAKE SINGLECHILDSCROLLVIEW BIAR BISA DI-SCROLL ---
+      // --- PAKE SINGLECHILDSCROLLVIEW BIAR BISA DI-SCROLL ---
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -58,7 +61,10 @@ class OrderDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Transaction Info", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: PastelColors.grey)),
+                  const Text(
+                    "Transaction Info", 
+                    style: TextStyle(fontSize: 16, color: Colors.black87) // Teks hitam, hapus bold
+                  ),
                   const SizedBox(height: 16),
                   _row("Transaction ID", order.id),
                   _row("Date", formatDate(order.date)),
@@ -70,7 +76,10 @@ class OrderDetailScreen extends StatelessWidget {
                     child: Divider(),
                   ),
 
-                  const Text("Items Purchased", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: PastelColors.grey)),
+                  const Text(
+                    "Items Purchased", 
+                    style: TextStyle(fontSize: 14, color: Colors.black87) // Teks hitam, hapus bold
+                  ),
                   const SizedBox(height: 12),
 
                   // DAFTAR ITEM (Model Bertingkat)
@@ -89,9 +98,8 @@ class OrderDetailScreen extends StatelessWidget {
                           Text(
                             name,
                             style: const TextStyle(
-                              fontWeight: FontWeight.bold,
                               fontSize: 14,
-                              color: PastelColors.grey,
+                              color: Colors.black87, // Teks produk hitam, hapus bold
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -104,8 +112,7 @@ class OrderDetailScreen extends StatelessWidget {
                                 child: Text(
                                   "x$qty",
                                   style: const TextStyle(
-                                    color: PastelColors.emerald,
-                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87, // Qty jadi hitam, hapus bold
                                   ),
                                 ),
                               ),
@@ -114,7 +121,7 @@ class OrderDetailScreen extends StatelessWidget {
                                 flex: 3,
                                 child: Text(
                                   formatRupiah(price),
-                                  style: const TextStyle(color: Colors.grey, fontSize: 13),
+                                  style: const TextStyle(color: Colors.black87, fontSize: 13), // Harga satuan jadi hitam
                                 ),
                               ),
                               // Total Harga per Item (Kanan Banget)
@@ -124,8 +131,7 @@ class OrderDetailScreen extends StatelessWidget {
                                   formatRupiah(total),
                                   textAlign: TextAlign.right,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: PastelColors.grey,
+                                    color: Colors.black87, // Harga sub-total per item hitam, hapus bold
                                   ),
                                 ),
                               ),
@@ -134,7 +140,7 @@ class OrderDetailScreen extends StatelessWidget {
                         ],
                       ),
                     );
-                  }).toList(),
+                  }),
 
                   const Divider(height: 32),
 
@@ -145,19 +151,24 @@ class OrderDetailScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Total", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: PastelColors.grey)),
-                      Text(formatRupiah(order.total), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: PastelColors.emerald)),
+                      const Text(
+                        "Total", 
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black87) // Teks Total hitam, hapus bold
+                      ),
+                      Text(
+                        formatRupiah(order.total), 
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.black87) // Nominal Total hitam, hapus bold
+                      ),
                     ],
                   ),
                 ],
               ),
             ),
             
-            // --- SPACER DIGANTI SIZEDBOX BIAR GAK ERROR PAS DI-SCROLL ---
             const SizedBox(height: 40), 
             
             // FOOTER INFO
-            Text("Order Ref: #${order.id.substring(0,8)}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            Text("Order Ref: #${order.id.substring(0,8)}", style: const TextStyle(color: Colors.black87, fontSize: 12)), // Footer hitam
             const SizedBox(height: 20),
           ],
         ),
@@ -171,8 +182,8 @@ class OrderDetailScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: PastelColors.grey)),
+          Text(title, style: const TextStyle(color: Colors.black87, fontSize: 13)), // Label kiri jadi hitam
+          Text(value, style: const TextStyle(fontSize: 13, color: Colors.black87)), // Value kanan hitam, hapus bold
         ],
       ),
     );
@@ -182,8 +193,8 @@ class OrderDetailScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(color: Colors.grey, fontSize: 14)),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14)),
+        Text(title, style: const TextStyle(color: Colors.black87, fontSize: 14)), // Label kiri jadi hitam
+        Text(value, style: const TextStyle(fontSize: 14, color: Colors.black87)), // Value kanan hitam, hapus bold
       ],
     );
   }

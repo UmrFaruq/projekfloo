@@ -20,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PastelColors.mint,
+      backgroundColor: AppColors.bgLight,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -32,7 +32,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: PastelColors.sage,
+                  color: AppColors.accent,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Center(
@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: PastelColors.grey,
+                    color: AppColors.textGrey,
                   ),
                   children: [
                     TextSpan(text: 'Floo'),
@@ -75,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: PastelColors.sage.withOpacity(0.1),
+                      color: AppColors.accent.withOpacity(0.1),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -108,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         prefixIcon: const Icon(Icons.person_outline),
                         hintText: 'Ketik "admin" atau "kasir"', 
                         filled: true,
-                        fillColor: PastelColors.mint.withOpacity(0.5),
+                        fillColor: AppColors.bgLight.withOpacity(0.5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -132,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         suffixIcon: const Icon(Icons.visibility_off_outlined),
                         hintText: '••••••••',
                         filled: true,
-                        fillColor: PastelColors.mint.withOpacity(0.5),
+                        fillColor: AppColors.bgLight.withOpacity(0.5),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -153,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           if (inputUsername.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Isi username dulu ges!"), backgroundColor: PastelColors.rose),
+                              const SnackBar(content: Text("Isi username dulu ges!"), backgroundColor: AppColors.error),
                             );
                             return;
                           }
@@ -177,10 +177,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: PastelColors.emerald,
+                          backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           elevation: 4,
-                          shadowColor: PastelColors.emerald.withOpacity(0.4),
+                          shadowColor: AppColors.primary.withOpacity(0.4),
                         ),
                         child: const Text('Sign In', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),

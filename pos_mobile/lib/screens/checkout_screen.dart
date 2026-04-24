@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Tambahan untuk format angka
+import 'package:intl/intl.dart'; 
 import '../data/cart_data.dart';
-import '../theme/colors.dart';
+import '../theme/colors.dart'; // MENGGUNAKAN AppColors
 import 'cash_payment_widget.dart';
 import 'qris_screen.dart';
 
@@ -13,18 +13,18 @@ void showWarningPopup(BuildContext context, String title, String message) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: PastelColors.rose),
+          const Icon(Icons.warning_amber_rounded, color: AppColors.error), // Icon merah toska-theme
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
         ],
       ),
-      content: Text(message, style: const TextStyle(fontSize: 14)),
+      content: Text(message, style: const TextStyle(fontSize: 14, color: Colors.black87)),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
           child: const Text(
             "OK",
-            style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold),
+            style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold),
           ),
         ),
       ],
@@ -84,30 +84,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final mergedItems = getMergedItems();
 
     return Scaffold(
-      backgroundColor: PastelColors.mint,
+      backgroundColor: AppColors.bgLight, // Background toska muda
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: PastelColors.mint,
+        backgroundColor: AppColors.bgLight,
         title: const Text(
           "Checkout",
-          style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold), // Judul hitam tegas
         ),
-        iconTheme: const IconThemeData(color: PastelColors.grey),
+        iconTheme: const IconThemeData(color: Colors.black87), // Icon back hitam
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
             "Customer",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: PastelColors.grey),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87), // Teks Hitam
           ),
           const SizedBox(height: 8),
           TextField(
             controller: customerController,
+            style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
             decoration: InputDecoration(
               hintText: "Nama customer",
-              hintStyle: const TextStyle(color: Colors.grey),
-              prefixIcon: const Icon(Icons.person_outline, color: PastelColors.emerald),
+              hintStyle: const TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.normal),
+              prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary), // Icon toska
               filled: true,
               fillColor: Colors.white,
               border: OutlineInputBorder(
@@ -120,7 +121,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
           const Text(
             "Order Summary",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: PastelColors.grey),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87), // Teks Hitam
           ),
           const SizedBox(height: 10),
           Container(
@@ -144,8 +145,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text("$name  x$qty", style: const TextStyle(color: PastelColors.grey)),
-                      Text(formatRupiah(total), style: const TextStyle(fontWeight: FontWeight.w600, color: PastelColors.grey)),
+                      Text("$name  x$qty", style: const TextStyle(color: Colors.black87)), // Nama item Hitam
+                      Text(formatRupiah(total), style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)), // Harga Hitam
                     ],
                   ),
                 );
@@ -168,16 +169,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Subtotal", style: TextStyle(color: Colors.grey)),
-                    Text(formatRupiah(getSubtotal()), style: const TextStyle(fontWeight: FontWeight.w600)),
+                    const Text("Subtotal", style: TextStyle(color: Colors.black87)),
+                    Text(formatRupiah(getSubtotal()), style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)), // Angka Hitam
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Tax (12%)", style: TextStyle(color: Colors.grey)),
-                    Text(formatRupiah(getTax()), style: const TextStyle(fontWeight: FontWeight.w600)),
+                    const Text("Tax (12%)", style: TextStyle(color: Colors.black87)),
+                    Text(formatRupiah(getTax()), style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)), // Angka Hitam
                   ],
                 ),
                 const Divider(height: 24),
@@ -186,11 +187,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   children: [
                     const Text(
                       "Total",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PastelColors.grey),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87), // Label Total Hitam
                     ),
                     Text(
                       formatRupiah(getTotal()),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PastelColors.emerald),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primaryDark), // Total Bayar Toska Gelap (Teal)
                     ),
                   ],
                 )
@@ -201,7 +202,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
           const Text(
             "Payment Method",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: PastelColors.grey),
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87), // Teks Hitam
           ),
           const SizedBox(height: 10),
           Container(
@@ -217,9 +218,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 RadioListTile(
                   value: "cash",
                   groupValue: paymentMethod,
-                  activeColor: PastelColors.emerald,
-                  title: const Text("Cash", style: TextStyle(fontWeight: FontWeight.w600)),
-                  secondary: const Icon(Icons.payments_outlined, color: PastelColors.emerald),
+                  activeColor: AppColors.primary, // Toska
+                  title: const Text("Cash", style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
+                  secondary: const Icon(Icons.payments_outlined, color: AppColors.primary), // Icon Toska
                   onChanged: (value) {
                     setState(() {
                       paymentMethod = value!;
@@ -229,9 +230,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 RadioListTile(
                   value: "qris",
                   groupValue: paymentMethod,
-                  activeColor: PastelColors.emerald,
-                  title: const Text("QRIS", style: TextStyle(fontWeight: FontWeight.w600)),
-                  secondary: const Icon(Icons.qr_code_2, color: PastelColors.emerald),
+                  activeColor: AppColors.primary, // Toska
+                  title: const Text("QRIS", style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
+                  secondary: const Icon(Icons.qr_code_2, color: AppColors.primary), // Icon Toska
                   onChanged: (value) {
                     setState(() {
                       paymentMethod = value!;
@@ -253,15 +254,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           if (paymentMethod == "qris")
             SizedBox(
               width: double.infinity,
-              height: 55, // Disamakan tingginya dengan tombol cash
+              height: 55, 
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PastelColors.emerald, // Dibuat hijau solid
+                  backgroundColor: AppColors.primary, // Dibuat toska solid
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  elevation: 0,
+                  elevation: 2,
                 ),
                 onPressed: () {
                   // LOGIKA WARNING POP-UP UNTUK QRIS
@@ -281,7 +282,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     ),
                   );
                 },
-                child: const Text("Bayar dengan QRIS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: const Text("Bayar dengan QRIS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
               ),
             ),
           const SizedBox(height: 40),

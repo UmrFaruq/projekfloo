@@ -1,17 +1,9 @@
 import 'package:flutter/material.dart';
 
 // --- IMPORT PATH (Sesuaikan dengan folder proyek abang) ---
-import '../../../../theme/colors.dart';
-import '../../../../screens/login_screen.dart';
-import 'admin_dashboard_screen.dart';
-import 'manage_product_screen.dart';
-import 'manage_category_screen.dart';
-import 'manage_cashier_screen.dart';
-import 'manage_payment_screen.dart';
-import 'manage_stock_screen.dart';
-import 'purchase_incoming_screen.dart';
-import 'sales_report_screen.dart';
-import 'manage_shifts_screen.dart';
+import '../../theme/colors.dart'; // MENGGUNAKAN AppColors
+// IMPORT DRAWER SENTRAL
+import 'admin_drawer.dart';
 
 class AuditTrailScreen extends StatefulWidget {
   const AuditTrailScreen({super.key});
@@ -68,7 +60,7 @@ class _AuditTrailScreenState extends State<AuditTrailScreen> {
     },
   ];
 
-  // --- FUNGSI UNTUK MENENTUKAN ICON & WARNA BERDASARKAN TIPE AKTIVITAS ---
+  // --- FUNGSI UNTUK MENENTUKAN ICON BERDASARKAN TIPE AKTIVITAS ---
   IconData _getLogIcon(String type) {
     switch (type) {
       case 'create': return Icons.add_circle_outline;
@@ -80,39 +72,49 @@ class _AuditTrailScreenState extends State<AuditTrailScreen> {
     }
   }
 
+  // --- FUNGSI UNTUK MENENTUKAN WARNA BERDASARKAN TIPE AKTIVITAS ---
   Color _getLogColor(String type) {
     switch (type) {
-      case 'create': return PastelColors.emerald;
-      case 'update': return Colors.orange;
-      case 'delete': return PastelColors.rose;
+      case 'create': return AppColors.primary; // Toska
+      case 'update': return AppColors.warning; // Orange/Kuning
+      case 'delete': return AppColors.error; // Merah
       case 'login': return Colors.blue;
       case 'logout': return Colors.purple;
-      default: return Colors.grey;
+      default: return AppColors.textGrey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PastelColors.mint,
-      drawer: const SizedBox(width: 260, child: FullAdminDrawer(activeMenu: "Audit Trail")),
+      backgroundColor: AppColors.bgLight, // Background toska muda
+      // --- MENGGUNAKAN DRAWER SENTRAL ---
+      drawer: const SizedBox(
+        width: 260, 
+        child: AdminDrawer(activeMenu: "Audit Trail")
+      ),
       appBar: AppBar(
-        backgroundColor: PastelColors.mint,
+        backgroundColor: AppColors.bgLight,
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.black87),
-        title: const Text("Audit Trail", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        title: const Text("Audit Trail", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)), // Judul Hitam
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list, color: PastelColors.emerald),
+            icon: const Icon(Icons.filter_list, color: AppColors.primary), // Icon Filter Toska
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Fitur filter tanggal segera hadir!")));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Fitur filter tanggal segera hadir!"),
+                  backgroundColor: AppColors.primary,
+                )
+              );
             },
           )
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: PastelColors.emerald))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary)) // Loading Toska
           : Column(
               children: [
                 // --- HEADER INFO ---
@@ -122,7 +124,7 @@ class _AuditTrailScreenState extends State<AuditTrailScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: PastelColors.emerald,
+                      color: AppColors.primary, // Header Kotak Toska Solid
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
                     ),
@@ -146,7 +148,7 @@ class _AuditTrailScreenState extends State<AuditTrailScreen> {
                       borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
                     ),
                     child: auditLogs.isEmpty
-                        ? const Center(child: Text("Belum ada log aktivitas.", style: TextStyle(color: Colors.grey)))
+                        ? const Center(child: Text("Belum ada log aktivitas.", style: TextStyle(color: AppColors.textGrey)))
                         : ListView.separated(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                             itemCount: auditLogs.length,
@@ -187,17 +189,17 @@ class _AuditTrailScreenState extends State<AuditTrailScreen> {
                                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(log['action'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: logColor)),
-                                            Text(log['time'], style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                            Text(log['time'], style: const TextStyle(fontSize: 11, color: AppColors.textGrey)),
                                           ],
                                         ),
                                         const SizedBox(height: 4),
-                                        Text(log['detail'], style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                                        Text(log['detail'], style: const TextStyle(fontSize: 14, color: Colors.black87)), // Detail log hitam
                                         const SizedBox(height: 6),
                                         Row(
                                           children: [
-                                            const Icon(Icons.person, size: 12, color: Colors.grey),
+                                            const Icon(Icons.person, size: 12, color: AppColors.textGrey),
                                             const SizedBox(width: 4),
-                                            Text("${log['user']} (${log['role']})", style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
+                                            Text("${log['user']} (${log['role']})", style: const TextStyle(fontSize: 11, color: AppColors.textGrey, fontWeight: FontWeight.bold)),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
@@ -214,116 +216,4 @@ class _AuditTrailScreenState extends State<AuditTrailScreen> {
             ),
     );
   }
-}
-
-// ==========================================
-// DRAWER FULL ADMIN 
-// ==========================================
-class FullAdminDrawer extends StatelessWidget {
-  final String activeMenu;
-  const FullAdminDrawer({super.key, required this.activeMenu});
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: Column(
-        children: [
-          Container(
-            height: 150, width: double.infinity, padding: const EdgeInsets.only(top: 40, left: 16),
-            decoration: const BoxDecoration(color: PastelColors.sage),
-            child: Row(
-              children: [
-                Container(
-                  width: 50, height: 50,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                  child: const Icon(Icons.admin_panel_settings, color: PastelColors.sage, size: 28),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Super Admin", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text("Owner", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildMenuTitle("MAIN MENU"),
-                _buildMenuItem(context, Icons.dashboard, "Dashboard", activeMenu == "Dashboard", () {
-                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen()), (route) => false);
-                }),
-                _buildMenuItem(context, Icons.receipt_long, "Sales Report", activeMenu == "Sales Report", () {
-                  if (activeMenu != "Sales Report") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SalesReportScreen()));
-                  else Navigator.pop(context);
-                }),
-                
-                _buildMenuTitle("MASTER DATA"),
-                _buildMenuItem(context, Icons.inventory_2_outlined, "Manage Products", activeMenu == "Manage Products", () {
-                  if (activeMenu != "Manage Products") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageProductScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.category_outlined, "Manage Categories", activeMenu == "Manage Categories", () {
-                  if (activeMenu != "Manage Categories") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCategoryScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.people_outline, "Manage Cashiers", activeMenu == "Manage Cashiers", () {
-                  if (activeMenu != "Manage Cashiers") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCashierScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.payments_outlined, "Payment Methods", activeMenu == "Payment Methods", () {
-                  if (activeMenu != "Payment Methods") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagePaymentScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                _buildMenuTitle("OPERATIONAL"),
-                _buildMenuItem(context, Icons.warehouse_outlined, "Manage Stock", activeMenu == "Manage Stock", () {
-                  if (activeMenu != "Manage Stock") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageStockScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.local_shipping_outlined, "Purchase / Incoming", activeMenu == "Purchase / Incoming", () {
-                  if (activeMenu != "Purchase / Incoming") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PurchaseIncomingScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.schedule, "Manage Shifts", activeMenu == "Manage Shifts", () {
-                  if (activeMenu != "Manage Shifts") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageShiftsScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                _buildMenuTitle("SYSTEM"),
-                _buildMenuItem(context, Icons.history, "Audit Trail", activeMenu == "Audit Trail", () {
-                  if (activeMenu != "Audit Trail") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuditTrailScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: PastelColors.rose),
-                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold)),
-                  onTap: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuTitle(String title) => Padding(
-    padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
-    child: Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
-  );
-
-  Widget _buildMenuItem(BuildContext context, IconData icon, String title, bool isSelected, VoidCallback onTap) => ListTile(
-    leading: Icon(icon, color: isSelected ? PastelColors.emerald : PastelColors.grey),
-    title: Text(title, style: TextStyle(color: isSelected ? PastelColors.emerald : PastelColors.grey, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600)),
-    selected: isSelected, selectedTileColor: PastelColors.mint.withOpacity(0.3), onTap: onTap,
-  );
 }

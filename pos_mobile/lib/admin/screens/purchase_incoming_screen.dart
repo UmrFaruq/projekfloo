@@ -4,17 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart'; 
 
 // --- IMPORT PATH (Sesuaikan dengan struktur folder proyek abang) ---
-import '../../../../theme/colors.dart';
-import '../../../../screens/login_screen.dart';
-import 'admin_dashboard_screen.dart';
-import 'manage_product_screen.dart';
-import 'manage_category_screen.dart';
-import 'manage_cashier_screen.dart';
-import 'manage_payment_screen.dart';
-import 'manage_stock_screen.dart';
-import 'sales_report_screen.dart';
-import 'manage_shifts_screen.dart';
-import 'audit_trail_screen.dart';
+import '../../theme/colors.dart'; // MENGGUNAKAN AppColors
+import 'admin_drawer.dart'; // IMPORT DRAWER SENTRAL
 
 class PurchaseIncomingScreen extends StatefulWidget {
   const PurchaseIncomingScreen({super.key});
@@ -106,7 +97,7 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
       if (mounted) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Gagal menarik data dari database"), backgroundColor: PastelColors.rose),
+          const SnackBar(content: Text("Gagal menarik data dari database"), backgroundColor: AppColors.error), // Merah
         );
       }
     }
@@ -139,7 +130,7 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text("Detail Barang Masuk", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        title: const Text("Detail Barang Masuk", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)), // Judul hitam
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,7 +139,7 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
             _rowDetail("Jumlah Masuk", "+${item['qty']} pcs"),
             _rowDetail("Tanggal/Jam", item['date']?.toString() ?? "-"),
             const Padding(padding: EdgeInsets.symmetric(vertical: 10), child: Divider()),
-            const Text("Info Supplier", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
+            const Text("Info Supplier", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textGrey)),
             const SizedBox(height: 12),
             _rowDetail("Supplier", item['supplier']?.toString() ?? "-"),
             _rowDetail("No. Telepon", item['phone']?.toString() ?? "-"),
@@ -157,19 +148,21 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
             // TOMBOL HUBUNGI VIA WHATSAPP / TELEPON
             SizedBox(
               width: double.infinity,
+              height: 50, // Biar tinggi tombol seragam
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PastelColors.emerald,
+                  backgroundColor: AppColors.primary, // Toska solid
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+                  elevation: 2,
                 ),
-                icon: const Icon(Icons.chat, color: Colors.white, size: 18), // Pake icon chat biar aman gak error merah
-                label: const Text("Hubungi Supplier", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                icon: const Icon(Icons.chat, size: 18), 
+                label: const Text("Hubungi Supplier", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 onPressed: () async {
                   String phone = item['phone']?.toString() ?? "";
                   
                   if (phone == "-" || phone.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Nomor telepon tidak tersedia", style: TextStyle(color: Colors.white)), backgroundColor: PastelColors.rose));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Nomor telepon tidak tersedia", style: TextStyle(color: Colors.white)), backgroundColor: AppColors.error)); // Merah
                     return;
                   }
 
@@ -187,7 +180,7 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
                       await launchUrl(telUrl);
                     }
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Gagal membuka aplikasi", style: TextStyle(color: Colors.white)), backgroundColor: PastelColors.rose));
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Gagal membuka aplikasi", style: TextStyle(color: Colors.white)), backgroundColor: AppColors.error)); // Merah
                   }
                 },
               ),
@@ -195,7 +188,7 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tutup", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tutup", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold))),
         ],
       ),
     );
@@ -207,8 +200,8 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 13)),
+          Text(label, style: const TextStyle(color: AppColors.textGrey, fontSize: 13)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 13)), // Value hitam
         ],
       ),
     );
@@ -231,7 +224,7 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
             children: [
               Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)))),
               const SizedBox(height: 20),
-              const Text("Input Barang Masuk", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text("Input Barang Masuk", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)), // Judul hitam
               const SizedBox(height: 24),
               _buildTextField(_productController, "Nama Produk", Icons.inventory_2_outlined),
               const SizedBox(height: 16),
@@ -243,9 +236,14 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
-                height: 55,
+                height: 55, // Tinggi tombol seragam
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: PastelColors.emerald, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary, // Toska
+                    foregroundColor: Colors.white,
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                  ),
                   onPressed: () {
                     if (_productController.text.isEmpty || _qtyController.text.isEmpty) return;
                     
@@ -271,7 +269,7 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
                     _phoneController.clear(); 
                     Navigator.pop(context);
                   },
-                  child: const Text("Simpan Data", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: const Text("Simpan Data", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
                 ),
               ),
               const SizedBox(height: 12),
@@ -286,8 +284,11 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
     return TextField(
       controller: controller,
       keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+      style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600), // Teks input hitam
       decoration: InputDecoration(
-        labelText: label, prefixIcon: Icon(icon, color: PastelColors.emerald),
+        labelText: label, 
+        labelStyle: const TextStyle(color: AppColors.textGrey),
+        prefixIcon: Icon(icon, color: AppColors.primary), // Icon toska
         filled: true, fillColor: Colors.grey.shade50,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
       ),
@@ -297,29 +298,33 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PastelColors.mint,
-      drawer: const SizedBox(width: 260, child: FullAdminDrawer(activeMenu: "Purchase / Incoming")),
+      backgroundColor: AppColors.bgLight, // Background toska muda
+      // --- PAKAI DRAWER SENTRAL ---
+      drawer: const SizedBox(
+        width: 260, 
+        child: AdminDrawer(activeMenu: "Purchase / Incoming")
+      ),
       appBar: AppBar(
-        backgroundColor: PastelColors.mint, elevation: 0, centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        backgroundColor: AppColors.bgLight, elevation: 0, centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.black87), // Icon back hitam
         title: const Text("Purchase / Incoming", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: PastelColors.emerald,
+        backgroundColor: AppColors.primary, // Toska
         onPressed: _showAddIncomingSheet,
         icon: const Icon(Icons.add_box, color: Colors.white),
         label: const Text("Input Barang", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
       body: isLoading 
-          ? const Center(child: CircularProgressIndicator(color: PastelColors.emerald))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary)) // Loading warna toska
           : Column(
               children: [
-                // 1. KOTAK HIJAU HEADER
+                // 1. KOTAK HEADER
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Container(
                     width: double.infinity, padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(color: PastelColors.emerald, borderRadius: BorderRadius.circular(20)),
+                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(20)), // Toska solid
                     child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -338,15 +343,16 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
                     ),
                     child: TextField(
                       controller: _searchController,
                       onChanged: (value) => _runFilter(value), // Fitur filter jalan tiap diketik
+                      style: const TextStyle(color: Colors.black87), // Teks search hitam
                       decoration: InputDecoration(
                         hintText: "Cari nama barang / supplier...",
-                        hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-                        prefixIcon: const Icon(Icons.search, color: PastelColors.emerald),
+                        hintStyle: const TextStyle(color: AppColors.textGrey, fontSize: 14),
+                        prefixIcon: const Icon(Icons.search, color: AppColors.primary), // Icon toska
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
                         contentPadding: const EdgeInsets.symmetric(vertical: 14),
                       ),
@@ -367,7 +373,7 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
                               children: [
                                 Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.shade300),
                                 const SizedBox(height: 16),
-                                const Text("Data tidak ditemukan.", style: TextStyle(color: Colors.grey, fontSize: 14)),
+                                const Text("Data tidak ditemukan.", style: TextStyle(color: AppColors.textGrey, fontSize: 14)),
                               ],
                             ),
                           )
@@ -383,30 +389,30 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: Colors.white, borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.grey.shade100),
+                                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
                                   ),
                                   child: Row(
                                     children: [
                                       Container(
                                         padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(color: PastelColors.mint.withOpacity(0.3), borderRadius: BorderRadius.circular(12)),
-                                        child: const Icon(Icons.inventory_2, color: PastelColors.emerald),
+                                        decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                                        child: const Icon(Icons.inventory_2, color: AppColors.primary), // Icon toska
                                       ),
                                       const SizedBox(width: 16),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(item['product']?.toString() ?? "Tanpa Nama", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                            Text(item['product']?.toString() ?? "Tanpa Nama", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)), // Nama hitam
                                             const SizedBox(height: 4),
-                                            Text("${item['supplier'] ?? 'Umum'} • ${item['date'] ?? '-'}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                            Text("${item['supplier'] ?? 'Umum'} • ${item['date'] ?? '-'}", style: const TextStyle(color: AppColors.textGrey, fontSize: 12)),
                                           ],
                                         ),
                                       ),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                        decoration: BoxDecoration(color: PastelColors.emerald.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
-                                        child: Text("+${item['qty']}", style: const TextStyle(fontWeight: FontWeight.bold, color: PastelColors.emerald)),
+                                        decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                                        child: Text("+${item['qty']}", style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)), // Qty toska
                                       ),
                                     ],
                                   ),
@@ -420,116 +426,4 @@ class _PurchaseIncomingScreenState extends State<PurchaseIncomingScreen> {
             ),
     );
   }
-}
-
-// ==========================================
-// DRAWER FULL ADMIN
-// ==========================================
-class FullAdminDrawer extends StatelessWidget {
-  final String activeMenu;
-  const FullAdminDrawer({super.key, required this.activeMenu});
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: Column(
-        children: [
-          Container(
-            height: 150, width: double.infinity, padding: const EdgeInsets.only(top: 40, left: 16),
-            decoration: const BoxDecoration(color: PastelColors.sage),
-            child: Row(
-              children: [
-                Container(
-                  width: 50, height: 50,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                  child: const Icon(Icons.admin_panel_settings, color: PastelColors.sage, size: 28),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Super Admin", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text("Owner", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildMenuTitle("MAIN MENU"),
-                _buildMenuItem(context, Icons.dashboard, "Dashboard", activeMenu == "Dashboard", () {
-                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen()), (route) => false);
-                }),
-                _buildMenuItem(context, Icons.receipt_long, "Sales Report", activeMenu == "Sales Report", () {
-                  if (activeMenu != "Sales Report") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SalesReportScreen()));
-                  else Navigator.pop(context);
-                }),
-                
-                _buildMenuTitle("MASTER DATA"),
-                _buildMenuItem(context, Icons.inventory_2_outlined, "Manage Products", activeMenu == "Manage Products", () {
-                  if (activeMenu != "Manage Products") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageProductScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.category_outlined, "Manage Categories", activeMenu == "Manage Categories", () {
-                  if (activeMenu != "Manage Categories") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCategoryScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.people_outline, "Manage Cashiers", activeMenu == "Manage Cashiers", () {
-                  if (activeMenu != "Manage Cashiers") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCashierScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.payments_outlined, "Payment Methods", activeMenu == "Payment Methods", () {
-                  if (activeMenu != "Payment Methods") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagePaymentScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                _buildMenuTitle("OPERATIONAL"),
-                _buildMenuItem(context, Icons.warehouse_outlined, "Manage Stock", activeMenu == "Manage Stock", () {
-                  if (activeMenu != "Manage Stock") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageStockScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.local_shipping_outlined, "Purchase / Incoming", activeMenu == "Purchase / Incoming", () {
-                  if (activeMenu != "Purchase / Incoming") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PurchaseIncomingScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.schedule, "Manage Shifts", activeMenu == "Manage Shifts", () {
-                  if (activeMenu != "Manage Shifts") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageShiftsScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                _buildMenuTitle("SYSTEM"),
-                _buildMenuItem(context, Icons.history, "Audit Trail", activeMenu == "Audit Trail", () {
-                  if (activeMenu != "Audit Trail") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuditTrailScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: PastelColors.rose),
-                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold)),
-                  onTap: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuTitle(String title) => Padding(
-    padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
-    child: Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
-  );
-
-  Widget _buildMenuItem(BuildContext context, IconData icon, String title, bool isSelected, VoidCallback onTap) => ListTile(
-    leading: Icon(icon, color: isSelected ? PastelColors.emerald : PastelColors.grey),
-    title: Text(title, style: TextStyle(color: isSelected ? PastelColors.emerald : PastelColors.grey, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600)),
-    selected: isSelected, selectedTileColor: PastelColors.mint.withOpacity(0.3), onTap: onTap,
-  );
 }

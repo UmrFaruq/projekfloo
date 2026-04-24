@@ -52,7 +52,7 @@ class ProductCard extends StatelessWidget {
               ],
             ),
             duration: const Duration(seconds: 2),
-            backgroundColor: PastelColors.emerald,
+            backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
@@ -73,7 +73,7 @@ class ProductCard extends StatelessWidget {
             Expanded(
               child: Container(
                 width: double.infinity,
-                decoration: BoxDecoration(color: PastelColors.mint.withOpacity(0.3), borderRadius: BorderRadius.circular(14)),
+                decoration: BoxDecoration(color: AppColors.bgLight.withOpacity(0.3), borderRadius: BorderRadius.circular(14)),
                 child: Center(
                   child: (product.image != null && product.image!.isNotEmpty)
                       ? ClipRRect(
@@ -100,7 +100,7 @@ class ProductCard extends StatelessWidget {
               style: const TextStyle(
                 fontWeight: FontWeight.bold, 
                 fontSize: 15, // <-- GANTI UKURAN NAMA PRODUK DI SINI (Awalnya 14)
-                color: PastelColors.grey
+                color: Colors.black87
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -130,7 +130,7 @@ class ProductCard extends StatelessWidget {
                   style: const TextStyle(
                     fontWeight: FontWeight.bold, 
                     fontSize: 14, // <-- GANTI UKURAN HARGA DI SINI (Awalnya 13)
-                    color: PastelColors.emerald
+                    color: AppColors.primary
                   ),
                 ),
               ],

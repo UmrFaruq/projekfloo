@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:intl/intl.dart'; // Tambahan untuk format angka
-import '../theme/colors.dart';
+import 'package:intl/intl.dart'; 
+import '../theme/colors.dart'; // MENGGUNAKAN AppColors
 import 'receipt_screen.dart';
 
 class QRISScreen extends StatelessWidget {
@@ -24,20 +24,20 @@ class QRISScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PastelColors.mint,
+      backgroundColor: AppColors.bgLight, // Background toska muda
       appBar: AppBar(
-        backgroundColor: PastelColors.mint,
+        backgroundColor: AppColors.bgLight,
         elevation: 0,
         centerTitle: true,
         title: const Text(
           "QRIS Payment",
-          style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold), // Teks judul hitam
         ),
-        iconTheme: const IconThemeData(color: PastelColors.grey),
+        iconTheme: const IconThemeData(color: Colors.black87), // Icon hitam
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24), // Padding luar diperlebar biar nggak mepet
+          padding: const EdgeInsets.all(24), 
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -49,14 +49,14 @@ class QRISScreen extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.bold, 
                   fontSize: 24, 
-                  color: PastelColors.grey
+                  color: Colors.black87 // Teks hitam
                 ),
               ),
               const SizedBox(height: 8),
               const Text(
                 "Arahkan kamera atau aplikasi e-wallet Anda ke QR Code di bawah ini untuk membayar.",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 14),
+                style: TextStyle(color: AppColors.textGrey, fontSize: 14), // Teks abu-abu toska
               ),
               
               const SizedBox(height: 40),
@@ -69,15 +69,17 @@ class QRISScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(24),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08), // Bayangan lembut
+                      color: Colors.black.withOpacity(0.08), 
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     )
                   ],
                 ),
                 child: QrImageView(
-                  data: "POS_PAYMENT_$total",
+                  // NANTI DATA INI YANG DIGANTI DENGAN RESPONSE DARI MIDTRANS/XENDIT
+                  data: "POS_PAYMENT_$total", 
                   size: 220,
+                  foregroundColor: AppColors.primaryDark, // Warna QR Code jadi Toska Gelap biar premium
                 ),
               ),
 
@@ -86,29 +88,29 @@ class QRISScreen extends StatelessWidget {
               // --- TOTAL HARGA ---
               const Text(
                 "Total Pembayaran",
-                style: TextStyle(color: Colors.grey, fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(color: AppColors.textGrey, fontSize: 14, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Text(
-                formatRupiah(total), // Diformat pakai titik (Rp)
+                formatRupiah(total), 
                 style: const TextStyle(
                   fontWeight: FontWeight.bold, 
                   fontSize: 32, 
-                  color: PastelColors.emerald,
+                  color: AppColors.primaryDark, // Total pembayaran jadi Toska Gelap
                 ),
               ),
 
               const Spacer(),
 
-              // --- TOMBOL KONFIRMASI ---
+              // --- TOMBOL KONFIRMASI (SEMENTARA SEBELUM ADA WEBHOOK) ---
               SizedBox(
                 width: double.infinity,
-                height: 55, // Tinggi disamakan dengan halaman lain
+                height: 55, 
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: PastelColors.emerald, // Warna solid
+                    backgroundColor: AppColors.primary, // Warna solid toska
                     foregroundColor: Colors.white,
-                    elevation: 0,
+                    elevation: 2,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -120,14 +122,13 @@ class QRISScreen extends StatelessWidget {
                         builder: (_) => ReceiptScreen(
                           customer: customer,
                           paymentMethod: paymentMethod,
-                          // Note: Karena QRIS uangnya pasti pas, kita nggak usah kirim amountPaid
                         ),
                       ),
                     );
                   },
                   child: const Text(
                     "Konfirmasi Pembayaran",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1),
                   ),
                 ),
               )

@@ -2,17 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // --- IMPORT PATH ---
-import '../../../../theme/colors.dart';
-import '../../../../screens/login_screen.dart';
-import 'admin_dashboard_screen.dart';
-import 'manage_product_screen.dart';
-import 'manage_category_screen.dart';
-import 'manage_payment_screen.dart';
-import 'manage_stock_screen.dart';
-import 'purchase_incoming_screen.dart';
-import 'sales_report_screen.dart';
-import 'manage_shifts_screen.dart';
-import 'audit_trail_screen.dart';
+import '../../theme/colors.dart'; // MENGGUNAKAN AppColors
+import 'admin_drawer.dart'; // IMPORT DRAWER SENTRAL
 
 class ManageCashierScreen extends StatefulWidget {
   const ManageCashierScreen({super.key});
@@ -87,7 +78,7 @@ class _ManageCashierScreenState extends State<ManageCashierScreen> {
   void _showSnackBar(String m, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(m), backgroundColor: isError ? PastelColors.rose : PastelColors.emerald)
+      SnackBar(content: Text(m), backgroundColor: isError ? AppColors.error : AppColors.primary) // Error merah, success toska
     );
   }
 
@@ -107,7 +98,7 @@ class _ManageCashierScreenState extends State<ManageCashierScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(isEdit ? "Edit Data Kasir" : "Tambah Kasir Baru", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(isEdit ? "Edit Data Kasir" : "Tambah Kasir Baru", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)), // Judul hitam
             const SizedBox(height: 16),
             _buildField("Nama Lengkap", Icons.person_outline, nameController),
             const SizedBox(height: 12),
@@ -115,18 +106,20 @@ class _ManageCashierScreenState extends State<ManageCashierScreen> {
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
+              height: 55, // Biar tinggi tombol seragam
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PastelColors.emerald, 
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                  backgroundColor: AppColors.primary, // Toska solid
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 2,
                 ),
                 onPressed: () {
                   if (nameController.text.isEmpty || userController.text.isEmpty) return;
                   Navigator.pop(context);
                   _saveCashier(nameController.text, userController.text, id: isEdit ? data['id'] : null);
                 },
-                child: const Text("SIMPAN KASIR", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: const Text("SIMPAN KASIR", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
               ),
             ),
             const SizedBox(height: 24),
@@ -139,9 +132,11 @@ class _ManageCashierScreenState extends State<ManageCashierScreen> {
   Widget _buildField(String hint, IconData icon, TextEditingController controller) {
     return TextField(
       controller: controller,
+      style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600), // Teks input hitam
       decoration: InputDecoration(
         hintText: hint,
-        prefixIcon: Icon(icon, color: Colors.grey),
+        hintStyle: const TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.normal),
+        prefixIcon: Icon(icon, color: AppColors.primary), // Icon toska
         filled: true,
         fillColor: Colors.grey.shade100,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
@@ -152,24 +147,31 @@ class _ManageCashierScreenState extends State<ManageCashierScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PastelColors.mint, 
-      drawer: const SizedBox(width: 260, child: FullAdminDrawer(activeMenu: "Manage Cashiers")),
+      backgroundColor: AppColors.bgLight, // Background toska muda
+      // --- PAKAI DRAWER SENTRAL ---
+      drawer: const SizedBox(
+        width: 260, 
+        child: AdminDrawer(activeMenu: "Manage Cashiers")
+      ),
       appBar: AppBar(
-        backgroundColor: PastelColors.mint, elevation: 0, centerTitle: true, iconTheme: const IconThemeData(color: Colors.black87),
+        backgroundColor: AppColors.bgLight, 
+        elevation: 0, 
+        centerTitle: true, 
+        iconTheme: const IconThemeData(color: Colors.black87), // Icon back hitam
         title: const Text("Manage Cashiers", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: PastelColors.sage,
+        backgroundColor: AppColors.primary, // Tombol nambah data toska
         onPressed: () => _tampilForm(),
         child: const Icon(Icons.person_add_alt_1, color: Colors.white),
       ),
       body: isLoading 
-        ? const Center(child: CircularProgressIndicator(color: PastelColors.emerald)) 
+        ? const Center(child: CircularProgressIndicator(color: AppColors.primary)) // Loading warna toska
         : Column(
             children: [
               Expanded(
                 child: cashiers.isEmpty 
-                  ? const Center(child: Text("Belum ada kasir terdaftar", style: TextStyle(color: Colors.grey)))
+                  ? const Center(child: Text("Belum ada kasir terdaftar", style: TextStyle(color: AppColors.textGrey)))
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: cashiers.length,
@@ -185,16 +187,16 @@ class _ManageCashierScreenState extends State<ManageCashierScreen> {
                           child: ListTile(
                             leading: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(color: PastelColors.mint.withOpacity(0.5), borderRadius: BorderRadius.circular(10)),
-                              child: const Icon(Icons.person, color: PastelColors.emerald),
+                              decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                              child: const Icon(Icons.person, color: AppColors.primary), // Icon toska
                             ),
-                            title: Text(c['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text("@${c['username']}"),
+                            title: Text(c['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)), // Nama hitam
+                            subtitle: Text("@${c['username']}", style: const TextStyle(color: AppColors.textGrey)),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.blue), onPressed: () => _tampilForm(c)),
-                                IconButton(icon: const Icon(Icons.delete_outline, color: PastelColors.rose), onPressed: () => _showDeleteDialog(c['id'], c['name'])),
+                                IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.error), onPressed: () => _showDeleteDialog(c['id'], c['name'])), // Tombol hapus merah toska-theme
                               ],
                             ),
                           ),
@@ -212,126 +214,16 @@ class _ManageCashierScreenState extends State<ManageCashierScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Hapus Kasir?"),
-        content: Text("Yakin mau menghapus kasir '$name'?"),
+        title: const Text("Hapus Kasir?", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        content: Text("Yakin mau menghapus kasir '$name'?", style: const TextStyle(color: Colors.black87)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold))),
           TextButton(
             onPressed: () { Navigator.pop(ctx); _deleteCashier(id); }, 
-            child: const Text("Hapus", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold))
+            child: const Text("Hapus", style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)) // Teks hapus merah toska-theme
           ),
         ],
       ),
     );
   }
-}
-
-/// DRAWER UNIVERSAL UNTUK SEMUA HALAMAN ADMIN (KECUALI DASHBOARD)
-class FullAdminDrawer extends StatelessWidget {
-  final String activeMenu;
-  const FullAdminDrawer({super.key, required this.activeMenu});
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: Column(
-        children: [
-          Container(
-            height: 150, width: double.infinity, padding: const EdgeInsets.only(top: 40, left: 16),
-            decoration: const BoxDecoration(color: PastelColors.sage),
-            child: Row(
-              children: [
-                Container(
-                  width: 50, height: 50,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                  child: const Icon(Icons.admin_panel_settings, color: PastelColors.sage, size: 28),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Super Admin", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text("Owner", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildMenuTitle("MAIN MENU"),
-                _buildMenuItem(context, Icons.dashboard, "Dashboard", activeMenu == "Dashboard", () {
-                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen()), (route) => false);
-                }),
-                _buildMenuItem(context, Icons.receipt_long, "Sales Report", activeMenu == "Sales Report", () {
-                  if (activeMenu != "Sales Report") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SalesReportScreen()));
-                  else Navigator.pop(context);
-                }),
-                
-                _buildMenuTitle("MASTER DATA"),
-                _buildMenuItem(context, Icons.inventory_2_outlined, "Manage Products", activeMenu == "Manage Products", () {
-                  if (activeMenu != "Manage Products") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageProductScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.category_outlined, "Manage Categories", activeMenu == "Manage Categories", () {
-                  if (activeMenu != "Manage Categories") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCategoryScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.people_outline, "Manage Cashiers", activeMenu == "Manage Cashiers", () {
-                  if (activeMenu != "Manage Cashiers") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCashierScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.payments_outlined, "Payment Methods", activeMenu == "Payment Methods", () {
-                  if (activeMenu != "Payment Methods") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagePaymentScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                _buildMenuTitle("OPERATIONAL"),
-                _buildMenuItem(context, Icons.warehouse_outlined, "Manage Stock", activeMenu == "Manage Stock", () {
-                  if (activeMenu != "Manage Stock") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageStockScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.local_shipping_outlined, "Purchase / Incoming", activeMenu == "Purchase / Incoming", () {
-                  if (activeMenu != "Purchase / Incoming") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PurchaseIncomingScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.schedule, "Manage Shifts", activeMenu == "Manage Shifts", () {
-                  if (activeMenu != "Manage Shifts") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageShiftsScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                _buildMenuTitle("SYSTEM"),
-                _buildMenuItem(context, Icons.history, "Audit Trail", activeMenu == "Audit Trail", () {
-                  if (activeMenu != "Audit Trail") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuditTrailScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: PastelColors.rose),
-                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold)),
-                  onTap: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuTitle(String title) => Padding(
-    padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
-    child: Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
-  );
-
-  Widget _buildMenuItem(BuildContext context, IconData icon, String title, bool isSelected, VoidCallback onTap) => ListTile(
-    leading: Icon(icon, color: isSelected ? PastelColors.emerald : PastelColors.grey),
-    title: Text(title, style: TextStyle(color: isSelected ? PastelColors.emerald : PastelColors.grey, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600)),
-    selected: isSelected, selectedTileColor: PastelColors.mint.withOpacity(0.3), onTap: onTap,
-  );
 }

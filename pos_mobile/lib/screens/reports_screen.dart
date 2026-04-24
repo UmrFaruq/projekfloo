@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../data/order_data.dart';
 import '../models/order.dart';
-import '../theme/colors.dart';
-import '../data/shift_data.dart'; // Import shift_data untuk cek status shift di drawer
+import '../theme/colors.dart'; // Menggunakan AppColors
+import '../data/shift_data.dart'; 
 import 'report_result_screen.dart';
-import 'dashboard_screen.dart';
-import 'sales_screen.dart';
-import 'order_history_screen.dart';
-import 'login_screen.dart';
+
+// --- IMPORT FILE DRAWER KASIR YANG BARU ---
+import 'cashier_drawer.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -27,6 +26,19 @@ class _ReportsScreenState extends State<ReportsScreen> {
       initialDate: DateTime.now(),
       firstDate: DateTime(2024),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        // Menyesuaikan warna kalender dengan tema Toska
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary, 
+              onPrimary: Colors.white, 
+              onSurface: Colors.black87,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
@@ -48,6 +60,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
       initialDate: startDate!,
       firstDate: startDate!,
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary, 
+              onPrimary: Colors.white, 
+              onSurface: Colors.black87,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
@@ -72,17 +96,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PastelColors.mint,
-      // --- PASANG DRAWER DI SINI ---
+      backgroundColor: AppColors.bgLight, // Background toska muda
+      // --- PASANG DRAWER SENTRAL DI SINI ---
       drawer: const SizedBox(
         width: 250,
-        child: AppDrawer(),
+        child: CashierDrawer(activeMenu: "Reports"),
       ),
       appBar: AppBar(
-        backgroundColor: PastelColors.mint,
+        backgroundColor: AppColors.bgLight,
         elevation: 0,
-        title: const Text("Reports", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold)),
-        iconTheme: const IconThemeData(color: PastelColors.grey),
+        title: const Text("Reports", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)), // Teks Hitam
+        iconTheme: const IconThemeData(color: Colors.black87), // Icon Hitam
         // Tombol menu untuk buka drawer
         leading: Builder(
           builder: (context) => IconButton(
@@ -96,7 +120,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("Select Report Date", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: PastelColors.grey)),
+            const Text("Select Report Date", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)), // Teks Hitam
             const SizedBox(height: 20),
 
             GestureDetector(
@@ -109,9 +133,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   children: [
                     Text(
                       startDate == null ? "Start Date" : DateFormat('dd MMM yyyy').format(startDate!),
-                      style: TextStyle(color: startDate == null ? Colors.grey : PastelColors.grey, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: startDate == null ? AppColors.textGrey : Colors.black87, // Hitam kalau udah diisi
+                        fontWeight: FontWeight.w600
+                      ),
                     ),
-                    const Icon(Icons.calendar_today, color: PastelColors.emerald)
+                    const Icon(Icons.calendar_today, color: AppColors.primary) // Icon Toska
                   ],
                 ),
               ),
@@ -129,9 +156,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   children: [
                     Text(
                       endDate == null ? "End Date" : DateFormat('dd MMM yyyy').format(endDate!),
-                      style: TextStyle(color: endDate == null ? Colors.grey : PastelColors.grey, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: endDate == null ? AppColors.textGrey : Colors.black87, // Hitam kalau udah diisi
+                        fontWeight: FontWeight.w600
+                      ),
                     ),
-                    const Icon(Icons.calendar_today, color: PastelColors.emerald)
+                    const Icon(Icons.calendar_today, color: AppColors.primary) // Icon Toska
                   ],
                 ),
               ),
@@ -144,19 +174,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
               height: 55,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PastelColors.teal,
+                  backgroundColor: AppColors.primary, // Tombol Toska
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: () {
                   if (startDate == null || endDate == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Pilih tanggal dulu bang!")));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Pilih tanggal dulu bang!"), backgroundColor: AppColors.error)
+                    );
                     return;
                   }
 
                   final filtered = getFilteredOrders();
                   
                   if (filtered.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tidak ada transaksi di tanggal tersebut.")));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Tidak ada transaksi di tanggal tersebut."), backgroundColor: AppColors.error)
+                    );
                     return;
                   }
 
@@ -170,101 +204,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ),
                   );
                 },
-                child: const Text("Preview Report", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: PastelColors.grey)),
+                child: const Text("Preview Report", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)), // Teks Putih
               ),
             )
           ],
         ),
-      ),
-    );
-  }
-}
-
-// --- WIDGET APP DRAWER (SAMA DENGAN HALAMAN LAIN) ---
-class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: Column(
-        children: [
-          Container(
-            height: 150,
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
-            decoration: const BoxDecoration(color: PastelColors.emerald),
-            child: Row(
-              children: [
-                Container(
-                  width: 50, height: 50,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                  child: const Icon(Icons.person, color: PastelColors.emerald, size: 28),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("NaWa", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text("Cashier", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  ],
-                )
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.dashboard, color: PastelColors.grey),
-                  title: const Text("Dashboard", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.w600)),
-                  onTap: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const DashboardScreen())),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.point_of_sale, color: PastelColors.grey),
-                  title: const Text("Sales", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    if (!shiftActive.value) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Start shift first")));
-                      return;
-                    }
-                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SalesScreen()));
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.receipt_long, color: PastelColors.grey),
-                  title: const Text("Order History", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    if (!shiftActive.value) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Start shift first")));
-                      return;
-                    }
-                    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const OrderHistoryScreen()));
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.bar_chart, color: PastelColors.emerald),
-                  title: const Text("Reports", style: TextStyle(color: PastelColors.emerald, fontWeight: FontWeight.bold)),
-                  onTap: () => Navigator.pop(context),
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: PastelColors.rose),
-                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    if (shiftActive.value) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("End shift first")));
-                      return;
-                    }
-                    Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false);
-                  },
-                ),
-              ],
-            ),
-          )
-        ],
       ),
     );
   }

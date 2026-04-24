@@ -1,12 +1,24 @@
 import 'package:flutter/material.dart';
 
-class PastelColors {
-  static const Color mint = Color(0xFFF0F7F4);
-  static const Color sage = Color(0xFFA8D5BA);
-  static const Color teal = Color(0xFFB8E1DD);
-  static const Color peach = Color(0xFFFFCCBC);
-  static const Color lavender = Color(0xFFF3E5F5);
-  static const Color grey = Color(0xFF4A4A4A);
-  static const Color emerald = Color(0xFF059669);
-  static const Color rose = Color(0xFFF43F5E);
+class AppColors {
+  // Warna Utama Aplikasi (#0691A6 - Toska/Teal)
+  static const Color primary = Color(0xFF0691A6);
+
+  // Warna Background / Latar Belakang Terang
+  static const Color bgLight = Color(0xFFE5F5F7);
+
+  // Warna Sekunder / Aksen (Turunan primary)
+  static const Color accent = Color(0xFF4CB8C8);
+
+  // Warna Utama versi Gelap (Untuk teks/kontras)
+  static const Color primaryDark = Color(0xFF046B7A);
+
+  // Warna Teks Abu-abu / Icon Non-aktif
+  static const Color textGrey = Color(0xFF8A9CA6);
+
+  static const Color warning = Color(0xFFF59E0B);
+  
+  // Merah yang lama mungkin kurang jreng, kita ganti atau tambah ini:
+  static const Color error = Color(0xFFFF3B30); // Merah solid untuk error
+  static const Color badgeRed = Color(0xFFFF3B30); // Merah super paten untuk notif keranjang
 }

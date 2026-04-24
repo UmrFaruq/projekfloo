@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // <-- IMPORT BARU UNTUK FORMATTER
-import 'package:intl/intl.dart'; // Tambahan untuk format angka bertitik
+import 'package:flutter/services.dart'; 
+import 'package:intl/intl.dart'; 
 import '../theme/colors.dart';
 import '../data/order_data.dart';
 import '../data/shift_data.dart';
-import '../data/report_helper.dart'; // <-- IMPORT PABRIK LAPORAN (BARU)
+import '../data/report_helper.dart'; 
 import 'sales_screen.dart';
-import 'order_history_screen.dart';
-import 'login_screen.dart';
-import 'reports_screen.dart';
+
+// --- IMPORT FILE DRAWER KASIR YANG BARU DIBIKIN ---
+import 'cashier_drawer.dart'; 
 
 // --- FUNGSI GLOBAL UNTUK POP-UP WARNING ---
 void showWarningPopup(BuildContext context, String title, String message) {
@@ -18,19 +18,16 @@ void showWarningPopup(BuildContext context, String title, String message) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: PastelColors.rose),
+          const Icon(Icons.warning_amber_rounded, color: AppColors.error),
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
         ],
       ),
-      content: Text(message, style: const TextStyle(fontSize: 14)),
+      content: Text(message, style: const TextStyle(fontSize: 14, color: Colors.black87)),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text(
-            "OK",
-            style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.bold),
-          ),
+          child: const Text("OK", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold)),
         ),
       ],
     ),
@@ -48,10 +45,10 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PastelColors.mint,
+      backgroundColor: AppColors.bgLight,
       drawer: const SizedBox(
         width: 250,
-        child: AppDrawer(),
+        child: CashierDrawer(activeMenu: "Dashboard"), // Panggil drawer baru
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -85,7 +82,7 @@ class DashboardHeader extends StatelessWidget {
           children: [
             Builder(
               builder: (context) => IconButton(
-                icon: const Icon(Icons.menu, size: 28),
+                icon: const Icon(Icons.menu, size: 28, color: Colors.black87),
                 onPressed: () {
                   Scaffold.of(context).openDrawer();
                 },
@@ -93,32 +90,26 @@ class DashboardHeader extends StatelessWidget {
             ),
             const Text(
               "Dashboard",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87), // Teks Hitam
             ),
             Container(
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: PastelColors.emerald, // Dibuat lebih solid
+                color: AppColors.primary, 
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
-                Icons.person_outline,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.person_outline, color: Colors.white),
             ),
           ],
         ),
         const SizedBox(height: 24),
         const Text(
-          "Hello, NaWa! 👋", // Disesuaikan dengan nickname kamu!
+          "Hello, NaWa! 👋", 
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.bold,
-            color: PastelColors.grey,
+            color: Colors.black87, // Teks Hitam tegas
           ),
         ),
       ],
@@ -135,7 +126,7 @@ class ShiftSummaryCard extends StatefulWidget {
 
 class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
   final TextEditingController openingController = TextEditingController();
-  DateTime? _shiftStartTime; // Variabel untuk menyimpan waktu start shift
+  DateTime? _shiftStartTime; 
 
   int getRevenue() {
     int total = 0;
@@ -192,7 +183,7 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
 
     openingBalance.value = balance;
     shiftActive.value = true;
-    _shiftStartTime = DateTime.now(); // Catat waktu mulai
+    _shiftStartTime = DateTime.now(); 
 
     Navigator.pushReplacement(
       context,
@@ -206,8 +197,8 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Akhiri Shift?"),
-        content: const Text("Apakah kamu yakin ingin mengakhiri shift ini?"),
+        title: const Text("Akhiri Shift?", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        content: const Text("Apakah kamu yakin ingin mengakhiri shift ini?", style: TextStyle(color: Colors.black87)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -218,10 +209,10 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
               shiftActive.value = false;
               openingBalance.value = 0;
               shiftOrders.value = [];
-              _shiftStartTime = null; // Reset waktu
+              _shiftStartTime = null; 
               Navigator.pop(ctx);
             },
-            child: const Text("Akhiri", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold)),
+            child: const Text("Akhiri", style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -261,7 +252,7 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: PastelColors.grey,
+                          color: Colors.black87, // Teks Hitam
                         ),
                       ),
                       if (active && _shiftStartTime != null) ...[
@@ -274,21 +265,18 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: active
-                          ? PastelColors.emerald.withOpacity(0.15)
-                          : PastelColors.rose.withOpacity(0.15),
+                          ? AppColors.primary.withOpacity(0.15)
+                          : AppColors.error.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       active ? "ACTIVE" : "INACTIVE",
                       style: TextStyle(
                         fontSize: 10,
-                        color: active ? PastelColors.emerald : PastelColors.rose,
+                        color: active ? AppColors.primary : AppColors.error,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -304,12 +292,14 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                     FilteringTextInputFormatter.digitsOnly,
                     CurrencyFormatInputFormatter(), 
                   ],
+                  style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
                   decoration: InputDecoration(
                     labelText: "Opening Balance",
-                    labelStyle: const TextStyle(color: PastelColors.grey),
+                    labelStyle: const TextStyle(color: AppColors.textGrey),
                     prefixText: "Rp ", 
+                    prefixStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
                     filled: true,
-                    fillColor: PastelColors.mint,
+                    fillColor: AppColors.bgLight,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -346,7 +336,7 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: active ? PastelColors.rose : PastelColors.emerald,
+                        backgroundColor: active ? AppColors.error : AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -363,11 +353,9 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: ElevatedButton(
-                      // --- INI FUNGSI BARUNYA BANG! (LANGSUNG DOWNLOAD) ---
                       onPressed: () async {
                         final today = DateTime.now();
                         
-                        // Cari transaksi yang tanggalnya sama kayak hari ini
                         final todaysOrders = allOrders.value.where((o) =>
                             o.date.year == today.year &&
                             o.date.month == today.month &&
@@ -379,14 +367,12 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                           return;
                         }
 
-                        // Cetak Laporan!
                         String fileName = "Laporan_Hari_Ini_${DateFormat('dd-MM-yyyy').format(today)}";
                         await ReportHelper.downloadExcel(todaysOrders, fileName);
                       },
-                      // ---------------------------------------------------
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: PastelColors.teal, 
-                        foregroundColor: PastelColors.grey, 
+                        backgroundColor: AppColors.primary, 
+                        foregroundColor: Colors.white, 
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -412,7 +398,7 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: PastelColors.mint,
+        color: AppColors.bgLight,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -423,7 +409,7 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
             label.toUpperCase(),
             style: const TextStyle(
               fontSize: 10,
-              color: Colors.grey,
+              color: AppColors.textGrey,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -433,7 +419,7 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
             style: const TextStyle(
               fontSize: 15, 
               fontWeight: FontWeight.bold,
-              color: PastelColors.grey, 
+              color: Colors.black87, // Teks Angka jadi hitam tegas
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -473,7 +459,7 @@ class RecentTransactionsCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: PastelColors.grey,
+                  color: Colors.black87, // Teks Hitam
                 ),
               ),
               const SizedBox(height: 20),
@@ -491,10 +477,10 @@ class RecentTransactionsCard extends StatelessWidget {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: PastelColors.mint,
+                          color: AppColors.bgLight,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.receipt_long, size: 20, color: PastelColors.emerald),
+                        child: const Icon(Icons.receipt_long, size: 20, color: AppColors.primary), // Icon Toska
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -502,7 +488,7 @@ class RecentTransactionsCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(order.customer,
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: PastelColors.grey)),
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)), // Nama Hitam
                             Text(order.paymentMethod.toUpperCase(),
                                 style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600))
                           ],
@@ -510,7 +496,7 @@ class RecentTransactionsCard extends StatelessWidget {
                       ),
                       Text(
                         formatRupiah(order.total), 
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: PastelColors.emerald),
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark), // Harga lebih tegas
                       )
                     ],
                   ),
@@ -520,146 +506,6 @@ class RecentTransactionsCard extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: Column(
-        children: [
-          /// HEADER
-          Container(
-            height: 150,
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 40, left: 16, right: 16),
-            decoration: const BoxDecoration(
-              color: PastelColors.emerald, 
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    color: PastelColors.emerald,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "NaWa",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                    Text(
-                      "Cashier",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                )
-              ],
-            ),
-          ),
-
-          /// MENU
-          Expanded(
-            child: ListView(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.dashboard, color: PastelColors.grey),
-                  title: const Text("Dashboard", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.point_of_sale, color: PastelColors.grey),
-                  title: const Text("Sales", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    if (!shiftActive.value) {
-                      showWarningPopup(context, "Akses Ditolak", "Kamu harus memulai shift (Start Shift) terlebih dahulu.");
-                      return;
-                    }
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const SalesScreen(),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.receipt_long, color: PastelColors.grey),
-                  title: const Text("Order History", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    if (!shiftActive.value) {
-                      showWarningPopup(context, "Akses Ditolak", "Kamu harus memulai shift (Start Shift) terlebih dahulu.");
-                      return;
-                    }
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const OrderHistoryScreen(),
-                      ),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.bar_chart, color: PastelColors.grey),
-                  title: const Text("Reports", style: TextStyle(color: PastelColors.grey, fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ReportsScreen(),
-                      ),
-                    );
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: PastelColors.rose),
-                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.w600)),
-                  onTap: () {
-                    if (shiftActive.value) {
-                      showWarningPopup(context, "Gagal Logout", "Tolong akhiri shift (End Shift) terlebih dahulu sebelum logout.");
-                      return;
-                    }
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LoginScreen(),
-                      ),
-                      (route) => false,
-                    );
-                  },
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
     );
   }
 }

@@ -30,7 +30,7 @@ class CategoryChip extends StatelessWidget {
 
         decoration: BoxDecoration(
           color: isSelected
-              ? PastelColors.sage
+              ? AppColors.accent
               : Colors.white,
 
           borderRadius: BorderRadius.circular(20),
@@ -43,7 +43,7 @@ class CategoryChip extends StatelessWidget {
             fontWeight: FontWeight.w500,
             color: isSelected
                 ? Colors.white
-                : PastelColors.grey,
+                : AppColors.textGrey,
           ),
         ),
       ),

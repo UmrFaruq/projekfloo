@@ -4,7 +4,7 @@ import '../data/cart_data.dart';
 import '../data/order_data.dart';
 import '../data/shift_data.dart';
 import '../models/order.dart';
-import '../theme/colors.dart';
+import '../theme/colors.dart'; 
 import 'sales_screen.dart';
 
 class DashedDivider extends StatelessWidget {
@@ -28,7 +28,7 @@ class DashedDivider extends StatelessWidget {
                 width: dashWidth,
                 height: dashHeight,
                 child: DecoratedBox(
-                  decoration: BoxDecoration(color: Colors.grey),
+                  decoration: BoxDecoration(color: Colors.black87), 
                 ),
               );
             }),
@@ -42,13 +42,13 @@ class DashedDivider extends StatelessWidget {
 class ReceiptScreen extends StatefulWidget {
   final String customer;
   final String paymentMethod;
-  final int? amountPaid; // ---> DITAMBAHKAN DISINI (Bisa null kalau bayarnya pakai QRIS)
+  final int? amountPaid; 
 
   const ReceiptScreen({
     super.key,
     required this.customer,
     required this.paymentMethod,
-    this.amountPaid, // ---> DITANGKAP DISINI
+    this.amountPaid, 
   });
 
   @override
@@ -137,7 +137,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     final mergedItems = getMergedItems();
 
     return Scaffold(
-      backgroundColor: PastelColors.mint,
+      backgroundColor: AppColors.bgLight, 
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -148,7 +148,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: PastelColors.grey,
+                  color: AppColors.primary, 
                 ),
               ),
               const SizedBox(height: 16),
@@ -174,44 +174,44 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                       children: [
                         const Text(
                           "FLOO ID",
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: PastelColors.grey),
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1.5, color: Colors.black87),
                         ),
                         const SizedBox(height: 4),
                         const Text(
                           "Jl. Raya Kasir No. 123",
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                          style: TextStyle(fontSize: 12, color: Colors.black87),
                         ),
                         const DashedDivider(),
 
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("No. Nota:", style: TextStyle(fontSize: 12)),
-                            Text(transactionId, style: const TextStyle(fontSize: 12)),
+                            const Text("No. Nota:", style: TextStyle(fontSize: 12, color: Colors.black87)),
+                            Text(transactionId, style: const TextStyle(fontSize: 12, color: Colors.black87)), // Hapus bold
                           ],
                         ),
                         const SizedBox(height: 4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Tanggal:", style: TextStyle(fontSize: 12)),
-                            Text(getDate(), style: const TextStyle(fontSize: 12)),
+                            const Text("Tanggal:", style: TextStyle(fontSize: 12, color: Colors.black87)),
+                            Text(getDate(), style: const TextStyle(fontSize: 12, color: Colors.black87)), // Hapus w600
                           ],
                         ),
                         const SizedBox(height: 4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Pelanggan:", style: TextStyle(fontSize: 12)),
-                            Text(widget.customer.isEmpty ? "Umum" : widget.customer, style: const TextStyle(fontSize: 12)),
+                            const Text("Pelanggan:", style: TextStyle(fontSize: 12, color: Colors.black87)),
+                            Text(widget.customer.isEmpty ? "Umum" : widget.customer, style: const TextStyle(fontSize: 12, color: Colors.black87)), // Hapus w600
                           ],
                         ),
                         const SizedBox(height: 4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Pembayaran:", style: TextStyle(fontSize: 12)),
-                            Text(widget.paymentMethod.toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            const Text("Pembayaran:", style: TextStyle(fontSize: 12, color: Colors.black87)),
+                            Text(widget.paymentMethod.toUpperCase(), style: const TextStyle(fontSize: 12, color: Colors.black87)), // Hapus bold
                           ],
                         ),
                         
@@ -230,15 +230,15 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                               children: [
                                 Expanded(
                                   flex: 3,
-                                  child: Text(name, style: const TextStyle(fontSize: 13)),
+                                  child: Text(name, style: const TextStyle(fontSize: 13, color: Colors.black87)), // Hapus w500
                                 ),
                                 Expanded(
                                   flex: 1,
-                                  child: Text("x$qty", textAlign: TextAlign.center, style: const TextStyle(fontSize: 13)),
+                                  child: Text("x$qty", textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: Colors.black87)),
                                 ),
                                 Expanded(
                                   flex: 3,
-                                  child: Text(formatRupiah(total), textAlign: TextAlign.right, style: const TextStyle(fontSize: 13)),
+                                  child: Text(formatRupiah(total), textAlign: TextAlign.right, style: const TextStyle(fontSize: 13, color: Colors.black87)), // Hapus w500
                                 ),
                               ],
                             ),
@@ -250,16 +250,16 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Subtotal", style: TextStyle(fontSize: 13)),
-                            Text(formatRupiah(getSubtotal()), style: const TextStyle(fontSize: 13)),
+                            const Text("Subtotal", style: TextStyle(fontSize: 13, color: Colors.black87)),
+                            Text(formatRupiah(getSubtotal()), style: const TextStyle(fontSize: 13, color: Colors.black87)), // Hapus w600
                           ],
                         ),
                         const SizedBox(height: 6),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("Tax (12%)", style: TextStyle(fontSize: 13)),
-                            Text(formatRupiah(getTax()), style: const TextStyle(fontSize: 13)),
+                            const Text("Tax (12%)", style: TextStyle(fontSize: 13, color: Colors.black87)),
+                            Text(formatRupiah(getTax()), style: const TextStyle(fontSize: 13, color: Colors.black87)), // Hapus w600
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -268,31 +268,30 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                           children: [
                             const Text(
                               "TOTAL",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PastelColors.emerald),
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87), // Tetap Bold
                             ),
                             Text(
                               formatRupiah(getTotal()),
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: PastelColors.emerald),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87), // Tetap Bold
                             ),
                           ],
                         ),
 
-                        // ---> LOGIKA BARU: TAMPILKAN TUNAI & KEMBALIAN JIKA CASH <---
                         if (widget.paymentMethod == "cash" && widget.amountPaid != null) ...[
                           const SizedBox(height: 10),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text("Tunai", style: TextStyle(fontSize: 13)),
-                              Text(formatRupiah(widget.amountPaid!), style: const TextStyle(fontSize: 13)),
+                              const Text("Tunai", style: TextStyle(fontSize: 13, color: Colors.black87)),
+                              Text(formatRupiah(widget.amountPaid!), style: const TextStyle(fontSize: 13, color: Colors.black87)), // Hapus w600
                             ],
                           ),
                           const SizedBox(height: 4),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text("Kembalian", style: TextStyle(fontSize: 13)),
-                              Text(formatRupiah(widget.amountPaid! - getTotal()), style: const TextStyle(fontSize: 13)),
+                              const Text("Kembalian", style: TextStyle(fontSize: 13, color: Colors.black87)),
+                              Text(formatRupiah(widget.amountPaid! - getTotal()), style: const TextStyle(fontSize: 13, color: Colors.black87)), // Hapus w600
                             ],
                           ),
                         ],
@@ -300,11 +299,11 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                         const SizedBox(height: 30),
                         const Text(
                           "Terima kasih atas kunjungan Anda!",
-                          style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.grey),
+                          style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic, color: Colors.black87),
                         ),
                         const Text(
                           "Barang yang sudah dibeli tidak dapat ditukar.",
-                          style: TextStyle(fontSize: 10, color: Colors.grey),
+                          style: TextStyle(fontSize: 10, color: Colors.black87),
                         )
                       ],
                     ),
@@ -319,10 +318,10 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                     child: OutlinedButton.icon(
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: PastelColors.emerald, width: 2),
+                        side: const BorderSide(color: AppColors.primary, width: 2), 
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                      icon: const Icon(Icons.print, color: PastelColors.emerald),
+                      icon: const Icon(Icons.print, color: AppColors.primary), 
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -333,20 +332,21 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                                 Text("Mencetak struk...", style: TextStyle(fontWeight: FontWeight.bold)),
                               ],
                             ),
-                            backgroundColor: PastelColors.emerald,
+                            backgroundColor: AppColors.primary, 
                             behavior: SnackBarBehavior.floating,
                             duration: Duration(seconds: 2),
                           ),
                         );
                       },
-                      label: const Text("Print Struk", style: TextStyle(color: PastelColors.emerald, fontWeight: FontWeight.bold)),
+                      label: const Text("Print Struk", style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)), 
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: PastelColors.emerald,
+                        backgroundColor: AppColors.primary, 
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -365,7 +365,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                           (route) => false,
                         );
                       },
-                      child: const Text("Selesai", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      child: const Text("Selesai", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ),
                   ),
                 ],

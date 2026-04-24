@@ -2,17 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // --- IMPORT PATH DISESUAIKAN ---
-import '../../../../theme/colors.dart';
-import '../../../../screens/login_screen.dart';
-import 'admin_dashboard_screen.dart'; 
-import 'manage_product_screen.dart'; 
-import 'manage_cashier_screen.dart';
-import 'manage_payment_screen.dart';
-import 'manage_stock_screen.dart';
-import 'purchase_incoming_screen.dart';
-import 'sales_report_screen.dart';
-import 'manage_shifts_screen.dart';
-import 'audit_trail_screen.dart';
+import '../../theme/colors.dart'; // MENGGUNAKAN AppColors
+import 'admin_drawer.dart'; // IMPORT DRAWER SENTRAL
 
 class ManageCategoryScreen extends StatefulWidget {
   const ManageCategoryScreen({super.key});
@@ -88,7 +79,7 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? PastelColors.rose : PastelColors.emerald,
+        backgroundColor: isError ? AppColors.error : AppColors.primary, // Merah untuk error, Toska untuk sukses
       ),
     );
   }
@@ -128,15 +119,17 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
           children: [
             Text(
               isEdit ? "Edit Kategori" : "Tambah Kategori Baru",
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87), // Judul hitam
             ),
             const SizedBox(height: 16),
             TextField(
               controller: nameController,
               autofocus: true,
+              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600), // Teks input hitam
               decoration: InputDecoration(
                 hintText: "Contoh: Elektronik",
-                prefixIcon: const Icon(Icons.category_outlined),
+                hintStyle: const TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.normal),
+                prefixIcon: const Icon(Icons.category_outlined, color: AppColors.primary), // Icon toska
                 filled: true,
                 fillColor: Colors.grey.shade100,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
@@ -145,18 +138,21 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
+              height: 55, // Tinggi tombol seragam
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: PastelColors.emerald,
+                  backgroundColor: AppColors.primary, // Toska solid
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 2,
                 ),
                 onPressed: () async {
                   if (nameController.text.isEmpty) return;
                   Navigator.pop(context);
                   await _saveCategory(nameController.text, id: isEdit ? kategoriLama['id'] : null);
                 },
-                child: const Text("Simpan Kategori", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                child: const Text("Simpan Kategori", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
               ),
             ),
             const SizedBox(height: 24),
@@ -177,23 +173,26 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: PastelColors.mint,
-      // MENGGUNAKAN FULL ADMIN DRAWER AGAR SINKRON DENGAN HALAMAN LAIN
-      drawer: const SizedBox(width: 260, child: FullAdminDrawer(activeMenu: "Manage Categories")),
+      backgroundColor: AppColors.bgLight, // Background toska muda
+      // --- PAKAI DRAWER SENTRAL ---
+      drawer: const SizedBox(
+        width: 260, 
+        child: AdminDrawer(activeMenu: "Manage Categories")
+      ),
       appBar: AppBar(
-        backgroundColor: PastelColors.mint,
+        backgroundColor: AppColors.bgLight,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        iconTheme: const IconThemeData(color: Colors.black87), // Icon back hitam
         title: const Text("Manage Categories", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: PastelColors.sage,
+        backgroundColor: AppColors.primary, // Tombol nambah data toska
         onPressed: () => _tampilFormKategori(),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: isLoading 
-        ? const Center(child: CircularProgressIndicator(color: PastelColors.emerald))
+        ? const Center(child: CircularProgressIndicator(color: AppColors.primary)) // Loading warna toska
         : Column(
             children: [
               // --- SEARCH BAR ---
@@ -204,6 +203,7 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))]
                   ),
                   child: TextField(
                     onChanged: (value) {
@@ -211,9 +211,11 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
                         searchQuery = value;
                       });
                     },
+                    style: const TextStyle(color: Colors.black87),
                     decoration: const InputDecoration(
-                      icon: Icon(Icons.search, color: Colors.grey),
+                      icon: Icon(Icons.search, color: AppColors.textGrey),
                       hintText: "Search category...",
+                      hintStyle: TextStyle(color: AppColors.textGrey),
                       border: InputBorder.none,
                     ),
                   ),
@@ -221,7 +223,7 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
               ),
               Expanded(
                 child: filteredCategories.isEmpty
-                  ? const Center(child: Text("Kategori tidak ditemukan.", style: TextStyle(color: Colors.grey)))
+                  ? const Center(child: Text("Kategori tidak ditemukan.", style: TextStyle(color: AppColors.textGrey)))
                   : ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount: filteredCategories.length,
@@ -237,19 +239,19 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
                           child: ListTile(
                             leading: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(color: PastelColors.mint.withOpacity(0.5), borderRadius: BorderRadius.circular(10)),
-                              child: Icon(_getCategoryIcon(cat['category_name'] ?? ''), color: PastelColors.emerald),
+                              decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                              child: Icon(_getCategoryIcon(cat['category_name'] ?? ''), color: AppColors.primary), // Icon dinamis toska
                             ),
-                            title: Text(cat['category_name'] ?? 'Tanpa Nama', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            title: Text(cat['category_name'] ?? 'Tanpa Nama', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)), // Nama kategori hitam
                             trailing: PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert, color: Colors.grey),
+                              icon: const Icon(Icons.more_vert, color: AppColors.textGrey),
                               onSelected: (val) {
                                 if (val == 'edit') _tampilFormKategori(cat);
                                 if (val == 'delete') _showDeleteDialog(cat);
                               },
                               itemBuilder: (context) => [
-                                const PopupMenuItem(value: 'edit', child: Text("Edit")),
-                                const PopupMenuItem(value: 'delete', child: Text("Hapus", style: TextStyle(color: PastelColors.rose))),
+                                const PopupMenuItem(value: 'edit', child: Text("Edit", style: TextStyle(color: Colors.black87))),
+                                const PopupMenuItem(value: 'delete', child: Text("Hapus", style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold))), // Teks hapus merah
                               ],
                             ),
                           ),
@@ -267,123 +269,13 @@ class _ManageCategoryScreenState extends State<ManageCategoryScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Hapus Kategori?"),
-        content: Text("Yakin mau menghapus '${cat['category_name']}'?"),
+        title: const Text("Hapus Kategori?", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        content: Text("Yakin mau menghapus '${cat['category_name']}'?", style: const TextStyle(color: Colors.black87)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal")),
-          TextButton(onPressed: () { Navigator.pop(ctx); _deleteCategory(cat['id']); }, child: const Text("Hapus", style: TextStyle(color: Colors.red))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold))),
+          TextButton(onPressed: () { Navigator.pop(ctx); _deleteCategory(cat['id']); }, child: const Text("Hapus", style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold))), // Teks hapus merah toska-theme
         ],
       ),
     );
   }
-}
-
-/// DRAWER UNIVERSAL UNTUK SEMUA HALAMAN ADMIN (KECUALI DASHBOARD)
-class FullAdminDrawer extends StatelessWidget {
-  final String activeMenu;
-  const FullAdminDrawer({super.key, required this.activeMenu});
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: Column(
-        children: [
-          Container(
-            height: 150, width: double.infinity, padding: const EdgeInsets.only(top: 40, left: 16),
-            decoration: const BoxDecoration(color: PastelColors.sage),
-            child: Row(
-              children: [
-                Container(
-                  width: 50, height: 50,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                  child: const Icon(Icons.admin_panel_settings, color: PastelColors.sage, size: 28),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Super Admin", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text("Owner", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildMenuTitle("MAIN MENU"),
-                _buildMenuItem(context, Icons.dashboard, "Dashboard", activeMenu == "Dashboard", () {
-                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen()), (route) => false);
-                }),
-                _buildMenuItem(context, Icons.receipt_long, "Sales Report", activeMenu == "Sales Report", () {
-                  if (activeMenu != "Sales Report") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SalesReportScreen()));
-                  else Navigator.pop(context);
-                }),
-                
-                _buildMenuTitle("MASTER DATA"),
-                _buildMenuItem(context, Icons.inventory_2_outlined, "Manage Products", activeMenu == "Manage Products", () {
-                  if (activeMenu != "Manage Products") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageProductScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.category_outlined, "Manage Categories", activeMenu == "Manage Categories", () {
-                  if (activeMenu != "Manage Categories") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCategoryScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.people_outline, "Manage Cashiers", activeMenu == "Manage Cashiers", () {
-                  if (activeMenu != "Manage Cashiers") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCashierScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.payments_outlined, "Payment Methods", activeMenu == "Payment Methods", () {
-                  if (activeMenu != "Payment Methods") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagePaymentScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                _buildMenuTitle("OPERATIONAL"),
-                _buildMenuItem(context, Icons.warehouse_outlined, "Manage Stock", activeMenu == "Manage Stock", () {
-                  if (activeMenu != "Manage Stock") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageStockScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.local_shipping_outlined, "Purchase / Incoming", activeMenu == "Purchase / Incoming", () {
-                  if (activeMenu != "Purchase / Incoming") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PurchaseIncomingScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.schedule, "Manage Shifts", activeMenu == "Manage Shifts", () {
-                  if (activeMenu != "Manage Shifts") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageShiftsScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                _buildMenuTitle("SYSTEM"),
-                _buildMenuItem(context, Icons.history, "Audit Trail", activeMenu == "Audit Trail", () {
-                  if (activeMenu != "Audit Trail") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuditTrailScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: PastelColors.rose),
-                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold)),
-                  onTap: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuTitle(String title) => Padding(
-    padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
-    child: Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
-  );
-
-  Widget _buildMenuItem(BuildContext context, IconData icon, String title, bool isSelected, VoidCallback onTap) => ListTile(
-    leading: Icon(icon, color: isSelected ? PastelColors.emerald : PastelColors.grey),
-    title: Text(title, style: TextStyle(color: isSelected ? PastelColors.emerald : PastelColors.grey, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600)),
-    selected: isSelected, selectedTileColor: PastelColors.mint.withOpacity(0.3), onTap: onTap,
-  );
 }

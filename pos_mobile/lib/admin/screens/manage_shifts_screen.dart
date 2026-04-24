@@ -3,17 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart'; // Wajib buat fitur Share ke Grup WA
 
 // --- IMPORT PATH (Sesuaikan dengan folder proyek abang) ---
-import '../../../../theme/colors.dart';
-import '../../../../screens/login_screen.dart';
-import 'admin_dashboard_screen.dart';
-import 'manage_product_screen.dart';
-import 'manage_category_screen.dart';
-import 'manage_cashier_screen.dart';
-import 'manage_payment_screen.dart';
-import 'manage_stock_screen.dart';
-import 'purchase_incoming_screen.dart';
-import 'sales_report_screen.dart';
-import 'audit_trail_screen.dart';
+import '../../theme/colors.dart'; // MENGGUNAKAN AppColors
+import 'admin_drawer.dart'; // IMPORT DRAWER SENTRAL
 
 class ManageShiftsScreen extends StatefulWidget {
   const ManageShiftsScreen({super.key});
@@ -63,20 +54,25 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case "Aktif":
-        return PastelColors.emerald;
+        return AppColors.primary; // Toska
       case "Selesai":
-        return Colors.grey;
+        return AppColors.textGrey; // Abu-abu
       case "Belum Mulai":
-        return PastelColors.sage;
+        return AppColors.warning; // Kuning/Warning
       default:
-        return Colors.grey;
+        return AppColors.textGrey;
     }
   }
 
   // --- FUNGSI SHARE JADWAL KE WA ---
   void _shareSchedule() {
     if (shiftData.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Belum ada jadwal untuk dibagikan", style: TextStyle(color: Colors.white)), backgroundColor: PastelColors.rose));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Belum ada jadwal untuk dibagikan", style: TextStyle(color: Colors.white)), 
+          backgroundColor: AppColors.error // Merah
+        )
+      );
       return;
     }
 
@@ -106,7 +102,11 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(primary: PastelColors.emerald, onPrimary: Colors.white, onSurface: Colors.black),
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primary, // Toska
+              onPrimary: Colors.white, 
+              onSurface: Colors.black87
+            ),
           ),
           child: child!,
         );
@@ -157,21 +157,24 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("Hapus Jadwal?", style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text("Apakah Anda yakin ingin menghapus jadwal shift ini? Data yang dihapus tidak bisa dikembalikan."),
+        title: const Text("Hapus Jadwal?", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+        content: const Text("Apakah Anda yakin ingin menghapus jadwal shift ini? Data yang dihapus tidak bisa dikembalikan.", style: TextStyle(color: Colors.black87)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context), 
-            child: const Text("Batal", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold))
+            child: const Text("Batal", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold))
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: PastelColors.rose, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error, // Merah
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+            ),
             onPressed: () {
               setState(() {
                 shiftData.removeAt(index);
               });
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Jadwal berhasil dihapus"), backgroundColor: PastelColors.rose));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Jadwal berhasil dihapus"), backgroundColor: AppColors.error)); // Merah
             },
             child: const Text("Hapus", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
@@ -193,7 +196,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
           children: [
             Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)))),
             const SizedBox(height: 20),
-            Text(isEdit ? "Edit Jadwal Shift" : "Buat Jadwal Shift", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(isEdit ? "Edit Jadwal Shift" : "Buat Jadwal Shift", style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)), // Judul hitam
             const SizedBox(height: 24),
             
             // Kolom Tanggal (Ditambahin)
@@ -201,9 +204,11 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
               controller: _dateController,
               readOnly: true, // Biar kalender yang muncul, bukan keyboard
               onTap: () => _selectDate(context),
+              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600), // Teks input hitam
               decoration: InputDecoration(
                 labelText: "Tanggal Shift", 
-                prefixIcon: const Icon(Icons.calendar_month, color: PastelColors.emerald),
+                labelStyle: const TextStyle(color: AppColors.textGrey),
+                prefixIcon: const Icon(Icons.calendar_month, color: AppColors.primary), // Icon toska
                 filled: true, fillColor: Colors.grey.shade50,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
               ),
@@ -227,7 +232,12 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
               width: double.infinity,
               height: 55,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: PastelColors.emerald, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary, // Toska
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 2,
+                ),
                 onPressed: () {
                   if (_shiftNameController.text.isEmpty || _cashierController.text.isEmpty) return;
                   
@@ -255,7 +265,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                   
                   Navigator.pop(context);
                 },
-                child: Text(isEdit ? "Simpan Perubahan" : "Simpan Jadwal", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: Text(isEdit ? "Simpan Perubahan" : "Simpan Jadwal", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
               ),
             ),
             const SizedBox(height: 12),
@@ -268,9 +278,11 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
   Widget _buildTextField(TextEditingController controller, String label, IconData icon) {
     return TextField(
       controller: controller,
+      style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600), // Teks input hitam
       decoration: InputDecoration(
         labelText: label, 
-        prefixIcon: Icon(icon, color: PastelColors.emerald),
+        labelStyle: const TextStyle(color: AppColors.textGrey),
+        prefixIcon: Icon(icon, color: AppColors.primary), // Icon toska
         filled: true, 
         fillColor: Colors.grey.shade50,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
@@ -281,18 +293,22 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: PastelColors.mint,
-      drawer: const SizedBox(width: 260, child: FullAdminDrawer(activeMenu: "Manage Shifts")),
+      backgroundColor: AppColors.bgLight, // Background toska muda
+      // --- PAKAI DRAWER SENTRAL ---
+      drawer: const SizedBox(
+        width: 260, 
+        child: AdminDrawer(activeMenu: "Manage Shifts")
+      ),
       appBar: AppBar(
-        backgroundColor: PastelColors.mint,
+        backgroundColor: AppColors.bgLight,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black87),
+        iconTheme: const IconThemeData(color: Colors.black87), // Icon back hitam
         title: const Text("Manage Shifts", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
         actions: [
           // TOMBOL SHARE KE WA
           IconButton(
-            icon: const Icon(Icons.share, color: PastelColors.emerald),
+            icon: const Icon(Icons.share, color: AppColors.primary), // Icon toska
             onPressed: _shareSchedule,
             tooltip: "Bagikan Jadwal",
           ),
@@ -300,13 +316,13 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: PastelColors.emerald,
+        backgroundColor: AppColors.primary, // Toska
         onPressed: _showAddShiftSheet, 
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text("Buat Jadwal", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: PastelColors.emerald))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : Column(
               children: [
                 Padding(
@@ -315,7 +331,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: PastelColors.emerald,
+                      color: AppColors.primary, // Kotak header toska solid
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))],
                     ),
@@ -332,7 +348,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
 
                 Expanded(
                   child: shiftData.isEmpty
-                      ? const Center(child: Text("Belum ada jadwal shift.", style: TextStyle(color: Colors.grey)))
+                      ? const Center(child: Text("Belum ada jadwal shift.", style: TextStyle(color: AppColors.textGrey)))
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           itemCount: shiftData.length,
@@ -367,29 +383,29 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(shift['nama_shift'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        Text(shift['nama_shift'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)), // Teks hitam
                                         const SizedBox(height: 4),
                                         Row(
                                           children: [
-                                            const Icon(Icons.calendar_today, size: 14, color: PastelColors.emerald),
+                                            const Icon(Icons.calendar_today, size: 14, color: AppColors.primary), // Toska
                                             const SizedBox(width: 4),
-                                            Text("${shift['tanggal']}", style: const TextStyle(color: PastelColors.emerald, fontWeight: FontWeight.bold, fontSize: 13)),
+                                            Text("${shift['tanggal']}", style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13)), // Toska
                                           ],
                                         ),
                                         const SizedBox(height: 4),
                                         Row(
                                           children: [
-                                            const Icon(Icons.person_outline, size: 14, color: Colors.grey),
+                                            const Icon(Icons.person_outline, size: 14, color: AppColors.textGrey),
                                             const SizedBox(width: 4),
-                                            Text("Kasir: ${shift['kasir']}", style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                                            Text("Kasir: ${shift['kasir']}", style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.w600)), // Nama kasir lebih jelas
                                           ],
                                         ),
                                         const SizedBox(height: 4),
                                         Row(
                                           children: [
-                                            const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                                            const Icon(Icons.access_time, size: 14, color: AppColors.textGrey),
                                             const SizedBox(width: 4),
-                                            Text("${shift['jam_mulai']} - ${shift['jam_selesai']}", style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                                            Text("${shift['jam_mulai']} - ${shift['jam_selesai']}", style: const TextStyle(color: AppColors.textGrey, fontSize: 13)),
                                           ],
                                         ),
                                       ],
@@ -401,7 +417,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       PopupMenuButton<String>(
-                                        icon: const Icon(Icons.more_vert, color: Colors.grey),
+                                        icon: const Icon(Icons.more_vert, color: AppColors.textGrey),
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                         onSelected: (value) {
                                           if (value == 'edit') {
@@ -413,11 +429,11 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                                         itemBuilder: (context) => [
                                           const PopupMenuItem(
                                             value: 'edit',
-                                            child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.grey), SizedBox(width: 8), Text("Edit")]),
+                                            child: Row(children: [Icon(Icons.edit, size: 18, color: Colors.black87), SizedBox(width: 8), Text("Edit", style: TextStyle(color: Colors.black87))]),
                                           ),
                                           const PopupMenuItem(
                                             value: 'hapus',
-                                            child: Row(children: [Icon(Icons.delete, size: 18, color: PastelColors.rose), SizedBox(width: 8), Text("Hapus", style: TextStyle(color: PastelColors.rose))]),
+                                            child: Row(children: [Icon(Icons.delete, size: 18, color: AppColors.error), SizedBox(width: 8), Text("Hapus", style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold))]), // Merah
                                           ),
                                         ],
                                       ),
@@ -446,116 +462,4 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
             ),
     );
   }
-}
-
-// ==========================================
-// DRAWER FULL ADMIN TETAP SAMA
-// ==========================================
-class FullAdminDrawer extends StatelessWidget {
-  final String activeMenu;
-  const FullAdminDrawer({super.key, required this.activeMenu});
-
-  @override
-  Widget build(BuildContext context) {
-    return Drawer(
-      backgroundColor: Colors.white,
-      child: Column(
-        children: [
-          Container(
-            height: 150, width: double.infinity, padding: const EdgeInsets.only(top: 40, left: 16),
-            decoration: const BoxDecoration(color: PastelColors.sage),
-            child: Row(
-              children: [
-                Container(
-                  width: 50, height: 50,
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-                  child: const Icon(Icons.admin_panel_settings, color: PastelColors.sage, size: 28),
-                ),
-                const SizedBox(width: 12),
-                const Column(
-                  mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Super Admin", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text("Owner", style: TextStyle(color: Colors.white70, fontSize: 13)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _buildMenuTitle("MAIN MENU"),
-                _buildMenuItem(context, Icons.dashboard, "Dashboard", activeMenu == "Dashboard", () {
-                  Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const AdminDashboardScreen()), (route) => false);
-                }),
-                _buildMenuItem(context, Icons.receipt_long, "Sales Report", activeMenu == "Sales Report", () {
-                  if (activeMenu != "Sales Report") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SalesReportScreen()));
-                  else Navigator.pop(context);
-                }),
-                
-                _buildMenuTitle("MASTER DATA"),
-                _buildMenuItem(context, Icons.inventory_2_outlined, "Manage Products", activeMenu == "Manage Products", () {
-                  if (activeMenu != "Manage Products") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageProductScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.category_outlined, "Manage Categories", activeMenu == "Manage Categories", () {
-                  if (activeMenu != "Manage Categories") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCategoryScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.people_outline, "Manage Cashiers", activeMenu == "Manage Cashiers", () {
-                  if (activeMenu != "Manage Cashiers") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageCashierScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.payments_outlined, "Payment Methods", activeMenu == "Payment Methods", () {
-                  if (activeMenu != "Payment Methods") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManagePaymentScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                _buildMenuTitle("OPERATIONAL"),
-                _buildMenuItem(context, Icons.warehouse_outlined, "Manage Stock", activeMenu == "Manage Stock", () {
-                  if (activeMenu != "Manage Stock") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageStockScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.local_shipping_outlined, "Purchase / Incoming", activeMenu == "Purchase / Incoming", () {
-                  if (activeMenu != "Purchase / Incoming") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PurchaseIncomingScreen()));
-                  else Navigator.pop(context);
-                }),
-                _buildMenuItem(context, Icons.schedule, "Manage Shifts", activeMenu == "Manage Shifts", () {
-                  if (activeMenu != "Manage Shifts") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ManageShiftsScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                _buildMenuTitle("SYSTEM"),
-                _buildMenuItem(context, Icons.history, "Audit Trail", activeMenu == "Audit Trail", () {
-                  if (activeMenu != "Audit Trail") Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AuditTrailScreen()));
-                  else Navigator.pop(context);
-                }),
-
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: PastelColors.rose),
-                  title: const Text("Logout", style: TextStyle(color: PastelColors.rose, fontWeight: FontWeight.bold)),
-                  onTap: () => Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginScreen()), (route) => false),
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuTitle(String title) => Padding(
-    padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
-    child: Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
-  );
-
-  Widget _buildMenuItem(BuildContext context, IconData icon, String title, bool isSelected, VoidCallback onTap) => ListTile(
-    leading: Icon(icon, color: isSelected ? PastelColors.emerald : PastelColors.grey),
-    title: Text(title, style: TextStyle(color: isSelected ? PastelColors.emerald : PastelColors.grey, fontWeight: isSelected ? FontWeight.bold : FontWeight.w600)),
-    selected: isSelected, selectedTileColor: PastelColors.mint.withOpacity(0.3), onTap: onTap,
-  );
 }
