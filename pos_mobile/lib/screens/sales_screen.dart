@@ -4,11 +4,7 @@ import '../theme/colors.dart';
 import '../widgets/product_card.dart';
 import '../models/product.dart';
 import '../data/cart_data.dart';
-import 'dashboard_screen.dart';
-import 'order_history_screen.dart';
-import 'login_screen.dart';
 import 'cart_screen.dart';
-import '../data/shift_data.dart';
 
 // --- IMPORT FILE DRAWER KASIR YANG BARU ---
 import 'cashier_drawer.dart'; 
@@ -20,7 +16,7 @@ void showWarningPopup(BuildContext context, String title, String message) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.error), // Pakai warna error toska-theme
+          const Icon(Icons.warning_amber_rounded, color: AppColors.error), 
           const SizedBox(width: 8),
           Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
         ],
@@ -69,6 +65,7 @@ class _SalesScreenState extends State<SalesScreen> {
     try {
       final supabase = Supabase.instance.client;
 
+      // 1. Tarik Data Kategori
       final categoryResponse = await supabase.from('ms_category_product').select('category_name');
       List<String> fetchedCategories = ["Semua"];
       for (var cat in categoryResponse) {
@@ -77,8 +74,10 @@ class _SalesScreenState extends State<SalesScreen> {
         }
       }
 
+      // 2. Tarik Data Produk
       final productResponse = await supabase
           .from('ms_product')
+          // PASTIKAN NAMA KOLOM INI SAMA PERSIS DENGAN YANG ADA DI SUPABASE BOSKU
           .select('id, name_product, selling_price, qty, unit, image_url, ms_category_product (category_name)')
           .eq('is_active', true);
 
@@ -110,8 +109,13 @@ class _SalesScreenState extends State<SalesScreen> {
     } catch (e) {
       setState(() => isLoading = false);
       if (mounted) {
+        // ERROR DIBUAT MUNCUL JELAS BIAR KITA TAHU KALAU ADA KOLOM YANG SALAH
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Gagal mengambil data dari server."), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text("Gagal tarik data: $e"), 
+            backgroundColor: AppColors.error,
+            duration: const Duration(seconds: 5),
+          ),
         );
       }
     }
@@ -125,7 +129,6 @@ class _SalesScreenState extends State<SalesScreen> {
     }).toList();
   }
 
-  // --- WIDGET CHIPS KATEGORI (MENGGUNAKAN APPCOLORS) ---
   Widget _buildFilterChip(String label) {
     bool isSelected = selectedCategory == label;
     return GestureDetector(
@@ -134,7 +137,7 @@ class _SalesScreenState extends State<SalesScreen> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white, // Toska jika dipilih
+          color: isSelected ? AppColors.primary : Colors.white, 
           borderRadius: BorderRadius.circular(30), 
           border: isSelected ? null : Border.all(color: Colors.grey.shade300),
         ),
@@ -155,10 +158,10 @@ class _SalesScreenState extends State<SalesScreen> {
     final filteredProducts = getFilteredProducts();
 
     return Scaffold(
-      backgroundColor: AppColors.bgLight, // Background abu-abu toska
+      backgroundColor: AppColors.bgLight, 
       drawer: const SizedBox(
         width: 250, 
-        child: CashierDrawer(activeMenu: "Sales") // MANGGIL DRAWER BARU
+        child: CashierDrawer(activeMenu: "Sales") 
       ),
       body: SafeArea(
         child: Column(
@@ -206,7 +209,6 @@ class _SalesScreenState extends State<SalesScreen> {
                         ],
                       ),
                       const SizedBox(width: 8),
-                      // --- ICON PROFILE KANAN ATAS (MENGGUNAKAN APPCOLORS) ---
                       Container(
                         width: 40, height: 40,
                         decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(12)), 
@@ -256,21 +258,31 @@ class _SalesScreenState extends State<SalesScreen> {
               ),
               const SizedBox(height: 16),
               
-              // --- GRID PRODUK ---
+              // --- GRID PRODUK (DENGAN PULL-TO-REFRESH) ---
               Expanded(
-                child: filteredProducts.isEmpty
-                    ? const Center(child: Text("Produk tidak ditemukan.", style: TextStyle(color: AppColors.textGrey)))
-                    : GridView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        itemCount: filteredProducts.length,
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2, 
-                          crossAxisSpacing: 14, 
-                          mainAxisSpacing: 14, 
-                          childAspectRatio: 0.72
+                child: RefreshIndicator(
+                  onRefresh: _fetchDataFromSupabase,
+                  color: AppColors.primary,
+                  child: filteredProducts.isEmpty
+                      ? ListView(
+                          children: const [
+                            SizedBox(height: 100),
+                            Center(child: Text("Produk tidak ditemukan.", style: TextStyle(color: AppColors.textGrey)))
+                          ],
+                        )
+                      : GridView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(), // Biar selalu bisa di-pull ke bawah
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          itemCount: filteredProducts.length,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2, 
+                            crossAxisSpacing: 14, 
+                            mainAxisSpacing: 14, 
+                            childAspectRatio: 0.72
+                          ),
+                          itemBuilder: (context, index) => ProductCard(product: filteredProducts[index]),
                         ),
-                        itemBuilder: (context, index) => ProductCard(product: filteredProducts[index]),
-                      ),
+                ),
               ),
             ],
           ],

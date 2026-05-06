@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT SUPABASE
+
+// --- IMPORT SERVICE SUPABASE ---
+import 'services/supabase_service.dart';
 
 // --- IMPORT SCREENS ---
 import 'screens/login_screen.dart';
@@ -12,11 +14,12 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // --- INISIALISASI SUPABASE ---
-  // Masukkan URL dan Anon Key dari project Supabase kamu
-  await Supabase.initialize(
-    url: 'https://shoxoghitibiskqxphrj.supabase.co',
-    anonKey: 'sb_publishable_n6NzXsS99FR6aO9tfbU9Yg_85dUVvmq',
-  );
+  // Memanggil fungsi initialize() dari SupabaseService yang ada di folder services
+  try {
+    await SupabaseService().initialize();
+  } catch (e) {
+    debugPrint('Gagal inisialisasi Supabase: $e');
+  }
 
   runApp(const MyApp());
 }
@@ -29,10 +32,15 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'POS Mobile',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      theme: ThemeData(
+        primarySwatch: Colors.blue, 
+        useMaterial3: true,
+      ),
 
+      // Halaman pertama kali dibuka adalah Login
       home: const LoginScreen(),
 
+      // Daftar rute navigasi antar halaman
       routes: {
         '/login': (context) => const LoginScreen(),
         '/admin_dashboard': (context) => const AdminDashboardScreen(),

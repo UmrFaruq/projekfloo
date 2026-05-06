@@ -1,10 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT SUPABASE
 import '../theme/colors.dart';
 import '../data/shift_data.dart';
 
 // --- IMPORT DUA HALAMAN DASHBOARD ---
 import 'dashboard_screen.dart'; // Dashboard Kasir
 import '../admin/screens/admin_dashboard_screen.dart'; // Dashboard Admin
+
+// --- FUNGSI GLOBAL UNTUK POP-UP WARNING ---
+void showWarningPopup(BuildContext context, String title, String message) {
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: AppColors.error),
+          const SizedBox(width: 8),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
+        ],
+      ),
+      content: Text(message, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text("OK", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold)),
+        ),
+      ],
+    ),
+  );
+}
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,8 +39,68 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Controller buat ngebaca ketikan username
+  // Controller buat ngebaca ketikan username dan password
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController(); // <-- TAMBAHAN BARU
+  
+  bool _isLoading = false; // <-- INDIKATOR LOADING
+
+  // 🔥 FUNGSI LOGIN SUNGGUHAN KE SUPABASE 🔥
+  Future<void> _loginToSupabase() async {
+    String inputUsername = _usernameController.text.trim();
+    String inputPassword = _passwordController.text.trim();
+
+    if (inputUsername.isEmpty || inputPassword.isEmpty) {
+      showWarningPopup(context, "Data Kosong", "Username dan Password wajib diisi bosku!");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Cek kecocokan username dan password di tabel ms_user
+      final user = await supabase.from('ms_user')
+          .select('id, role, username')
+          .eq('username', inputUsername)
+          .eq('password', inputPassword)
+          .maybeSingle();
+
+      setState(() => _isLoading = false);
+
+      if (user == null) {
+        // Gagal login: Data tidak ditemukan / password salah
+        showWarningPopup(context, "Login Gagal", "Username atau Password salah!");
+        return;
+      }
+
+      // Kalau sukses, reset status shift
+      shiftActive.value = false;
+
+      // Ambil role-nya (apakah admin atau kasir)
+      String role = user['role']?.toString().toLowerCase() ?? 'kasir';
+
+      if (mounted) {
+        if (role == 'admin') {
+          // Masuk Dashboard Admin
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+          );
+        } else {
+          // Masuk Dashboard Kasir
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      showWarningPopup(context, "Error Sistem", "Terjadi kesalahan: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,10 +188,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
 
                     TextField(
-                      controller: _usernameController, // <-- Pasang controller di sini
+                      controller: _usernameController, 
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.person_outline),
-                        hintText: 'Ketik "admin" atau "kasir"', 
+                        hintText: 'Ketik username...', 
                         filled: true,
                         fillColor: AppColors.bgLight.withOpacity(0.5),
                         border: OutlineInputBorder(
@@ -126,10 +211,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
 
                     TextField(
+                      controller: _passwordController, // <-- PASANG CONTROLLER PASSWORD
                       obscureText: true,
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: const Icon(Icons.visibility_off_outlined),
                         hintText: '••••••••',
                         filled: true,
                         fillColor: AppColors.bgLight.withOpacity(0.5),
@@ -147,42 +232,18 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () {
-                          // Ambil teks username dan ubah jadi huruf kecil semua biar aman
-                          String inputUsername = _usernameController.text.trim().toLowerCase();
-
-                          if (inputUsername.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Isi username dulu ges!"), backgroundColor: AppColors.error),
-                            );
-                            return;
-                          }
-
-                          /// RESET SHIFT SETIAP LOGIN
-                          shiftActive.value = false;
-
-                          // --- LOGIKA CABANG NAVIGASI ---
-                          if (inputUsername.contains('admin')) {
-                            // Kalau ngetik admin -> Masuk Dashboard Admin
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
-                            );
-                          } else {
-                            // Kalau ngetik selain admin (misal kasir_01) -> Masuk Dashboard Kasir
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (context) => const DashboardScreen()),
-                            );
-                          }
-                        },
+                        // Kalau lagi loading, tombolnya dimatikan (null)
+                        onPressed: _isLoading ? null : _loginToSupabase,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           elevation: 4,
                           shadowColor: AppColors.primary.withOpacity(0.4),
                         ),
-                        child: const Text('Sign In', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        // Ganti teks jadi loading muter-muter kalau lagi proses
+                        child: _isLoading 
+                            ? const CircularProgressIndicator(color: Colors.white) 
+                            : const Text('Sign In', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],

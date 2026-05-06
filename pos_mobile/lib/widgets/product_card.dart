@@ -26,12 +26,13 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
+      onTap: () {       // KODINGAN BARU (Yang Benar)
         cart.add(
           CartItem(
+            id: product.id, // <--- TAMBAHKAN BARIS INI BOSKU!
             name: product.name,
             price: product.price,
-            image: product.image,
+            // (biarkan sisanya tetap sama)
           ),
         );
 
