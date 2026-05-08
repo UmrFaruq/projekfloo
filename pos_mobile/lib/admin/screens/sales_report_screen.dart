@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 // --- IMPORT UNTUK EXCEL (.xlsx) ---
@@ -25,44 +26,92 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
   int totalTransaksi = 0;
   List<Map<String, dynamic>> riwayatTransaksi = [];
 
-  String filterWaktu = "Hari Ini"; 
+  String filterWaktu = "Hari Ini";
 
   @override
   void initState() {
     super.initState();
-    _fetchLaporanDummy();
+    _fetchLaporan();
   }
 
-  // --- AMBIL DATA DUMMY ---
-  Future<void> _fetchLaporanDummy() async {
-    setState(() => isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 800)); 
+  final SupabaseClient supabase = Supabase.instance.client;
 
-    final dummyData = [
-      {"id_transaksi": "TRX-1001", "waktu": "14 Apr 2026, 09:15", "kasir": "NaWa", "total": 125000},
-      {"id_transaksi": "TRX-1002", "waktu": "14 Apr 2026, 10:30", "kasir": "NaWa", "total": 45000},
-      {"id_transaksi": "TRX-1003", "waktu": "14 Apr 2026, 11:45", "kasir": "Budi", "total": 210000},
-      {"id_transaksi": "TRX-1004", "waktu": "14 Apr 2026, 13:20", "kasir": "NaWa", "total": 75000},
-      {"id_transaksi": "TRX-1005", "waktu": "14 Apr 2026, 14:10", "kasir": "Siti", "total": 350000},
-    ];
+  Future<void> _fetchLaporan() async {
+    try {
+      setState(() => isLoading = true);
 
-    int hitungPendapatan = 0;
-    for (var trx in dummyData) {
-      hitungPendapatan += trx['total'] as int;
-    }
+      DateTime now = DateTime.now();
+      DateTime startDate;
 
-    if (mounted) {
+      if (filterWaktu == "Hari Ini") {
+        startDate = DateTime(now.year, now.month, now.day);
+      } else if (filterWaktu == "Minggu Ini") {
+        startDate = now.subtract(Duration(days: now.weekday - 1));
+      } else {
+        startDate = DateTime(now.year, now.month, 1);
+      }
+
+      final response = await supabase
+          .from('tr_sales')
+          .select('''
+          id,
+          no_invoice,
+          total,
+          created_at,
+          payment_method,
+          ms_user!tr_sales_user_id_fkey (
+            name
+          )
+        ''')
+          .gte('created_at', startDate.toIso8601String())
+          .isFilter('deleted_at', null)
+          .order('created_at', ascending: false);
+
+      int pendapatan = 0;
+
+      List<Map<String, dynamic>> transaksi = [];
+
+      for (var item in response) {
+        final total = double.tryParse(item['total'].toString())?.toInt() ?? 0;
+
+        pendapatan += total;
+
+        transaksi.add({
+          'id_transaksi': item['no_invoice'],
+          'waktu': DateFormat(
+            'dd MMM yyyy, HH:mm',
+          ).format(DateTime.parse(item['created_at'])),
+          'kasir': item['ms_user']?['name'] ?? 'Unknown',
+          'total': total,
+        });
+      }
+
       setState(() {
-        riwayatTransaksi = dummyData;
-        totalTransaksi = dummyData.length;
-        totalPendapatan = hitungPendapatan;
+        riwayatTransaksi = transaksi;
+        totalPendapatan = pendapatan;
+        totalTransaksi = transaksi.length;
         isLoading = false;
       });
+    } catch (e) {
+      debugPrint("ERROR SALES REPORT: $e");
+
+      setState(() => isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Gagal mengambil laporan: $e"),
+          backgroundColor: AppColors.error,
+        ),
+      );
     }
   }
 
   String formatRupiah(int amount) {
-    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(amount);
   }
 
   // =========================================================
@@ -72,15 +121,21 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
     try {
       var excel = Excel.createExcel();
       Sheet sheetObject = excel['Laporan Penjualan'];
-      
+
       // Hapus Sheet1 bawaan biar rapi
       if (excel.tables.containsKey('Sheet1')) {
-        excel.delete('Sheet1'); 
+        excel.delete('Sheet1');
       }
 
       // 3. Tambahkan Judul (Pake TextCellValue karena strict type)
-      sheetObject.appendRow([TextCellValue("LAPORAN PENJUALAN - $filterWaktu")]);
-      sheetObject.appendRow([TextCellValue("Dicetak pada: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}")]);
+      sheetObject.appendRow([
+        TextCellValue("LAPORAN PENJUALAN - $filterWaktu"),
+      ]);
+      sheetObject.appendRow([
+        TextCellValue(
+          "Dicetak pada: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}",
+        ),
+      ]);
       sheetObject.appendRow([TextCellValue("")]); // Baris kosong
 
       // 4. Bikin Header Kolom
@@ -97,7 +152,9 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
           TextCellValue(trx['id_transaksi'].toString()),
           TextCellValue(trx['waktu'].toString()),
           TextCellValue(trx['kasir'].toString()),
-          IntCellValue(trx['total'] as int), // Ini biar jadi format Angka di Excel
+          IntCellValue(
+            trx['total'] as int,
+          ), // Ini biar jadi format Angka di Excel
         ]);
       }
 
@@ -117,17 +174,21 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
       final directory = await getTemporaryDirectory();
       String fileName = "Laporan_${filterWaktu.replaceAll(" ", "_")}.xlsx";
       final File file = File('${directory.path}/$fileName');
-      
+
       await file.writeAsBytes(fileBytes);
 
       // 8. Share/Save
-      await Share.shareXFiles([XFile(file.path)], text: 'Laporan Penjualan $filterWaktu');
-      
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Laporan Penjualan $filterWaktu');
     } catch (e) {
       debugPrint("Error Excel: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Gagal export .xlsx: $e"), backgroundColor: AppColors.error) // Merah
+          SnackBar(
+            content: Text("Gagal export .xlsx: $e"),
+            backgroundColor: AppColors.error,
+          ), // Merah
         );
       }
     }
@@ -139,59 +200,100 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
       backgroundColor: AppColors.bgLight, // Background toska muda
       // --- PAKAI DRAWER SENTRAL ---
       drawer: const SizedBox(
-        width: 260, 
-        child: AdminDrawer(activeMenu: "Sales Report")
+        width: 260,
+        child: AdminDrawer(activeMenu: "Sales Report"),
       ),
       appBar: AppBar(
         backgroundColor: AppColors.bgLight,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black87), // Icon back hitam
-        title: const Text("Sales Report", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(
+          color: Colors.black87,
+        ), // Icon back hitam
+        title: const Text(
+          "Sales Report",
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.file_download, color: AppColors.primary), // Icon download toska
+            icon: const Icon(
+              Icons.file_download,
+              color: AppColors.primary,
+            ), // Icon download toska
             onPressed: () async {
               if (riwayatTransaksi.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tidak ada data"), backgroundColor: AppColors.error)); // Merah
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Tidak ada data"),
+                    backgroundColor: AppColors.error,
+                  ),
+                ); // Merah
                 return;
               }
               await _exportKeExcelReal();
             },
-          )
+          ),
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary)) // Loading toska
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ) // Loading toska
           : Column(
               children: [
                 // --- 1. FILTER WAKTU (CHIPS DI TENGAH) ---
                 Container(
                   width: double.infinity,
-                  color: Colors.transparent, // Transparan mengikuti background scaffold
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: Colors
+                      .transparent, // Transparan mengikuti background scaffold
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center, 
-                    children: ["Hari Ini", "Minggu Ini", "Bulan Ini"].map((filter) {
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: ["Hari Ini", "Minggu Ini", "Bulan Ini"].map((
+                      filter,
+                    ) {
                       bool isSelected = filterWaktu == filter;
                       return GestureDetector(
-                        onTap: () {
+                        onTap: () async {
                           setState(() => filterWaktu = filter);
+                          await _fetchLaporan();
                         },
                         child: Container(
                           margin: const EdgeInsets.symmetric(horizontal: 6),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary : Colors.white, // Toska kalau dipilih
+                            color: isSelected
+                                ? AppColors.primary
+                                : Colors.white, // Toska kalau dipilih
                             borderRadius: BorderRadius.circular(20),
-                            border: isSelected ? null : Border.all(color: Colors.grey.shade300),
-                            boxShadow: isSelected ? [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2))] : [],
+                            border: isSelected
+                                ? null
+                                : Border.all(color: Colors.grey.shade300),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: AppColors.primary.withOpacity(0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ]
+                                : [],
                           ),
                           child: Text(
                             filter,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black87, // Teks putih atau hitam
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.black87, // Teks putih atau hitam
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.w600,
                             ),
                           ),
                         ),
@@ -208,28 +310,52 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                       Expanded(
                         flex: 5,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.primary, // Toska solid
                             borderRadius: BorderRadius.circular(20),
-                            boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withOpacity(0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center, 
-                            crossAxisAlignment: CrossAxisAlignment.center, 
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.account_balance_wallet, color: Colors.white, size: 22),
+                                  Icon(
+                                    Icons.account_balance_wallet,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
                                   SizedBox(width: 8),
-                                  Text("Pendapatan", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                                  Text(
+                                    "Pendapatan",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                formatRupiah(totalPendapatan), 
-                                style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                                formatRupiah(totalPendapatan),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.bold,
+                                ),
                                 textAlign: TextAlign.center,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -242,28 +368,52 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                       Expanded(
                         flex: 4,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
-                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.03),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center, 
-                            crossAxisAlignment: CrossAxisAlignment.center, 
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.receipt_long, color: AppColors.textGrey, size: 22),
+                                  Icon(
+                                    Icons.receipt_long,
+                                    color: AppColors.textGrey,
+                                    size: 22,
+                                  ),
                                   SizedBox(width: 8),
-                                  Text("Transaksi", style: TextStyle(color: AppColors.textGrey, fontSize: 14, fontWeight: FontWeight.bold)),
+                                  Text(
+                                    "Transaksi",
+                                    style: TextStyle(
+                                      color: AppColors.textGrey,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                "$totalTransaksi", 
-                                style: const TextStyle(color: Colors.black87, fontSize: 32, fontWeight: FontWeight.bold), // Angka hitam tebal
+                                "$totalTransaksi",
+                                style: const TextStyle(
+                                  color: Colors.black87,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                ), // Angka hitam tebal
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -280,36 +430,83 @@ class _SalesReportScreenState extends State<SalesReportScreen> {
                     padding: const EdgeInsets.only(top: 20),
                     decoration: const BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(30),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                          child: Text("Riwayat Transaksi Terbaru", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87)), // Judul hitam
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 8,
+                          ),
+                          child: Text(
+                            "Riwayat Transaksi Terbaru",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ), // Judul hitam
                         ),
                         Expanded(
                           child: riwayatTransaksi.isEmpty
-                              ? const Center(child: Text("Belum ada transaksi hari ini.", style: TextStyle(color: AppColors.textGrey)))
+                              ? const Center(
+                                  child: Text(
+                                    "Belum ada transaksi hari ini.",
+                                    style: TextStyle(color: AppColors.textGrey),
+                                  ),
+                                )
                               : ListView.separated(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 8,
+                                  ),
                                   itemCount: riwayatTransaksi.length,
-                                  separatorBuilder: (context, index) => Divider(color: Colors.grey.shade200),
+                                  separatorBuilder: (context, index) =>
+                                      Divider(color: Colors.grey.shade200),
                                   itemBuilder: (context, index) {
                                     final trx = riwayatTransaksi[index];
                                     return ListTile(
                                       contentPadding: EdgeInsets.zero,
                                       leading: Container(
                                         padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
-                                        child: const Icon(Icons.check_circle, color: AppColors.primary, size: 24), // Icon toska
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withOpacity(
+                                            0.1,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.check_circle,
+                                          color: AppColors.primary,
+                                          size: 24,
+                                        ), // Icon toska
                                       ),
-                                      title: Text(trx['id_transaksi'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87)), // Teks hitam
-                                      subtitle: Text("Kasir: ${trx['kasir']} • ${trx['waktu']}", style: const TextStyle(fontSize: 12, color: AppColors.textGrey)),
+                                      title: Text(
+                                        trx['id_transaksi'],
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: Colors.black87,
+                                        ),
+                                      ), // Teks hitam
+                                      subtitle: Text(
+                                        "Kasir: ${trx['kasir']} • ${trx['waktu']}",
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppColors.textGrey,
+                                        ),
+                                      ),
                                       trailing: Text(
                                         formatRupiah(trx['total']),
-                                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark, fontSize: 14), // Harga toska gelap
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.primaryDark,
+                                          fontSize: 14,
+                                        ), // Harga toska gelap
                                       ),
                                     );
                                   },
