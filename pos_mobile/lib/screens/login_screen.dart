@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT SUPABASE
 import '../theme/colors.dart';
 import '../data/shift_data.dart';
+import '../services/session_service.dart';
 
 // --- IMPORT DUA HALAMAN DASHBOARD ---
 import 'dashboard_screen.dart'; // Dashboard Kasir
@@ -17,14 +18,30 @@ void showWarningPopup(BuildContext context, String title, String message) {
         children: [
           const Icon(Icons.warning_amber_rounded, color: AppColors.error),
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: Colors.black87,
+            ),
+          ),
         ],
       ),
-      content: Text(message, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+      content: Text(
+        message,
+        style: const TextStyle(fontSize: 14, color: Colors.black87),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text("OK", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold)),
+          child: const Text(
+            "OK",
+            style: TextStyle(
+              color: AppColors.textGrey,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ],
     ),
@@ -41,8 +58,9 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   // Controller buat ngebaca ketikan username dan password
   final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController(); // <-- TAMBAHAN BARU
-  
+  final TextEditingController _passwordController =
+      TextEditingController(); // <-- TAMBAHAN BARU
+
   bool _isLoading = false; // <-- INDIKATOR LOADING
 
   // 🔥 FUNGSI LOGIN SUNGGUHAN KE SUPABASE 🔥
@@ -51,7 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
     String inputPassword = _passwordController.text.trim();
 
     if (inputUsername.isEmpty || inputPassword.isEmpty) {
-      showWarningPopup(context, "Data Kosong", "Username dan Password wajib diisi bosku!");
+      showWarningPopup(
+        context,
+        "Data Kosong",
+        "Username dan Password wajib diisi bosku!",
+      );
       return;
     }
 
@@ -59,9 +81,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final supabase = Supabase.instance.client;
-      
+
       // Cek kecocokan username dan password di tabel ms_user
-      final user = await supabase.from('ms_user')
+      final user = await supabase
+          .from('ms_user')
           .select('id, role, username')
           .eq('username', inputUsername)
           .eq('password', inputPassword)
@@ -71,7 +94,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (user == null) {
         // Gagal login: Data tidak ditemukan / password salah
-        showWarningPopup(context, "Login Gagal", "Username atau Password salah!");
+        showWarningPopup(
+          context,
+          "Login Gagal",
+          "Username atau Password salah!",
+        );
         return;
       }
 
@@ -80,13 +107,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // Ambil role-nya (apakah admin atau kasir)
       String role = user['role']?.toString().toLowerCase() ?? 'kasir';
+      SessionService.setUser(
+        id: user['id'].toString(),
+        userName: user['username'].toString(),
+        userRole: role,
+      );
 
       if (mounted) {
         if (role == 'admin') {
           // Masuk Dashboard Admin
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+            MaterialPageRoute(
+              builder: (context) => const AdminDashboardScreen(),
+            ),
           );
         } else {
           // Masuk Dashboard Kasir
@@ -172,7 +206,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const Text(
                       'Welcome Back',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const Text(
                       'Please enter your credentials',
@@ -183,15 +220,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     /// USERNAME
                     const Text(
                       'USERNAME',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
                     ),
                     const SizedBox(height: 8),
 
                     TextField(
-                      controller: _usernameController, 
+                      controller: _usernameController,
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.person_outline),
-                        hintText: 'Ketik username...', 
+                        hintText: 'Ketik username...',
                         filled: true,
                         fillColor: AppColors.bgLight.withOpacity(0.5),
                         border: OutlineInputBorder(
@@ -206,12 +247,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     /// PASSWORD
                     const Text(
                       'PASSWORD',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                      ),
                     ),
                     const SizedBox(height: 8),
 
                     TextField(
-                      controller: _passwordController, // <-- PASANG CONTROLLER PASSWORD
+                      controller:
+                          _passwordController, // <-- PASANG CONTROLLER PASSWORD
                       obscureText: true,
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.lock_outline),
@@ -236,14 +282,24 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: _isLoading ? null : _loginToSupabase,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           elevation: 4,
                           shadowColor: AppColors.primary.withOpacity(0.4),
                         ),
                         // Ganti teks jadi loading muter-muter kalau lagi proses
-                        child: _isLoading 
-                            ? const CircularProgressIndicator(color: Colors.white) 
-                            : const Text('Sign In', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                'Sign In',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                   ],

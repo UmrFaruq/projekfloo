@@ -4,6 +4,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // --- IMPORT PATH (Sesuaikan dengan folder proyek abang) ---
 import '../../theme/colors.dart'; // MENGGUNAKAN AppColors
 import 'admin_drawer.dart'; // IMPORT DRAWER SENTRAL
+import '../../services/audit_service.dart';
+import '../../services/session_service.dart';
 
 class ManageStockScreen extends StatefulWidget {
   const ManageStockScreen({super.key});
@@ -14,11 +16,11 @@ class ManageStockScreen extends StatefulWidget {
 
 class _ManageStockScreenState extends State<ManageStockScreen> {
   final supabase = Supabase.instance.client;
-  
+
   List<Map<String, dynamic>> products = [];
   List<Map<String, dynamic>> categories = [];
   bool isLoading = true;
-  
+
   String searchQuery = "";
   String selectedFilter = "Semua";
 
@@ -33,8 +35,10 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
     setState(() => isLoading = true);
     try {
       // Ambil Kategori untuk Chips
-      final catResponse = await supabase.from('ms_category_product').select('id, category_name');
-      
+      final catResponse = await supabase
+          .from('ms_category_product')
+          .select('id, category_name');
+
       // Ambil Produk Lengkap dengan Nama Kategori
       final prodResponse = await supabase
           .from('ms_product')
@@ -68,11 +72,37 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
   Future<void> _updateStock(String id, int currentQty, int addedQty) async {
     try {
       final newQty = currentQty + addedQty;
+
+      // UPDATE QTY PRODUK
       await supabase.from('ms_product').update({'qty': newQty}).eq('id', id);
-      
+
+      // AMBIL DATA PRODUK
+      final product = products.firstWhere((e) => e['id'].toString() == id);
+
+      // SIMPAN HISTORY STOCK
+      await supabase.from('tr_stock').insert({
+        'product_id': id,
+        'user_id': SessionService.userId,
+        'qty': addedQty,
+        'tipe': 'in',
+        'information':
+            'Tambah stok ${product['name_product']} sebanyak $addedQty',
+        'description': 'Stock ditambahkan dari halaman manage stock',
+        'type': 'stock_in',
+      });
+
+      // AUDIT TRAIL
+      await AuditService.logActivity(
+        action: 'ADD STOCK',
+        detail:
+            'Menambahkan stok ${product['name_product']} sebanyak $addedQty',
+        type: 'update',
+      );
+
       if (mounted) {
         _showSnackBar("Stok berhasil ditambahkan!");
-        _fetchData(); 
+
+        _fetchData();
       }
     } catch (e) {
       _showSnackBar("Gagal update stok", isError: true);
@@ -88,7 +118,10 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
 
   void _showSnackBar(String m, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(m), backgroundColor: isError ? AppColors.error : AppColors.primary) // Merah untuk error, Toska untuk sukses
+      SnackBar(
+        content: Text(m),
+        backgroundColor: isError ? AppColors.error : AppColors.primary,
+      ), // Merah untuk error, Toska untuk sukses
     );
   }
 
@@ -101,37 +134,73 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Tambah Stok", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)), // Judul hitam
+        title: const Text(
+          "Tambah Stok",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: Colors.black87,
+          ),
+        ), // Judul hitam
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Produk: ${product['name_product']}", style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)), // Nama produk hitam
+            Text(
+              "Produk: ${product['name_product']}",
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
+              ),
+            ), // Nama produk hitam
             const SizedBox(height: 16),
             TextField(
               controller: qtyController,
               keyboardType: TextInputType.number,
               autofocus: true,
-              style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold), // Teks input hitam tebal
+              style: const TextStyle(
+                color: Colors.black87,
+                fontWeight: FontWeight.bold,
+              ), // Teks input hitam tebal
               decoration: InputDecoration(
                 hintText: "Jumlah barang masuk...",
-                hintStyle: const TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.normal),
+                hintStyle: const TextStyle(
+                  color: AppColors.textGrey,
+                  fontWeight: FontWeight.normal,
+                ),
                 suffixText: unit,
-                suffixStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold), // Suffix toska
+                suffixStyle: const TextStyle(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
+                ), // Suffix toska
                 filled: true,
                 fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              "Batal",
+              style: TextStyle(
+                color: AppColors.textGrey,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary, // Toska
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () {
               final int addedQty = int.tryParse(qtyController.text) ?? 0;
@@ -140,7 +209,10 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
                 _updateStock(product['id'].toString(), currentQty, addedQty);
               }
             },
-            child: const Text("Simpan", style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              "Simpan",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
@@ -152,8 +224,11 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
     // --- LOGIKA FILTER KATEGORI & SEARCH ---
     final filteredProducts = products.where((p) {
       String catName = p['ms_category_product']?['category_name'] ?? 'Lainnya';
-      bool matchesFilter = (selectedFilter == "Semua" || catName == selectedFilter);
-      bool matchesSearch = p['name_product'].toString().toLowerCase().contains(searchQuery.toLowerCase());
+      bool matchesFilter =
+          (selectedFilter == "Semua" || catName == selectedFilter);
+      bool matchesSearch = p['name_product'].toString().toLowerCase().contains(
+        searchQuery.toLowerCase(),
+      );
       return matchesFilter && matchesSearch;
     }).toList();
 
@@ -164,16 +239,25 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
       backgroundColor: AppColors.bgLight, // Background toska muda
       // --- PAKAI DRAWER SENTRAL ---
       drawer: const SizedBox(
-        width: 260, 
-        child: AdminDrawer(activeMenu: "Manage Stock")
+        width: 260,
+        child: AdminDrawer(activeMenu: "Manage Stock"),
       ),
       appBar: AppBar(
         backgroundColor: AppColors.bgLight,
-        elevation: 0, centerTitle: true, iconTheme: const IconThemeData(color: Colors.black87), // Icon back hitam
-        title: const Text("Manage Stock", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(
+          color: Colors.black87,
+        ), // Icon back hitam
+        title: const Text(
+          "Manage Stock",
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+        ),
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary)) // Loading warna toska
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ) // Loading warna toska
           : Column(
               children: [
                 // 1. SEARCH BAR
@@ -182,16 +266,24 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     decoration: BoxDecoration(
-                      color: Colors.white, 
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: TextField(
                       onChanged: (value) => setState(() => searchQuery = value),
-                      style: const TextStyle(color: Colors.black87), // Teks input pencarian hitam
+                      style: const TextStyle(
+                        color: Colors.black87,
+                      ), // Teks input pencarian hitam
                       decoration: const InputDecoration(
                         icon: Icon(Icons.search, color: AppColors.textGrey),
-                        hintText: "Cari nama produk...", 
+                        hintText: "Cari nama produk...",
                         hintStyle: TextStyle(color: AppColors.textGrey),
                         border: InputBorder.none,
                       ),
@@ -204,7 +296,9 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
-                    children: filterList.map((k) => _buildFilterChip(k)).toList(),
+                    children: filterList
+                        .map((k) => _buildFilterChip(k))
+                        .toList(),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -212,12 +306,21 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
                 // 3. GRID VIEW PRODUK
                 Expanded(
                   child: filteredProducts.isEmpty
-                      ? const Center(child: Text("Produk tidak ditemukan.", style: TextStyle(color: AppColors.textGrey)))
+                      ? const Center(
+                          child: Text(
+                            "Produk tidak ditemukan.",
+                            style: TextStyle(color: AppColors.textGrey),
+                          ),
+                        )
                       : GridView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 0.72 
-                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 0.72,
+                              ),
                           itemCount: filteredProducts.length,
                           itemBuilder: (context, index) {
                             final p = filteredProducts[index];
@@ -228,10 +331,21 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
                             return Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white, 
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(20),
-                                border: isLowStock ? Border.all(color: AppColors.error.withOpacity(0.6), width: 1.5) : null, // Border merah transparan kalau stok tipis
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                                border: isLowStock
+                                    ? Border.all(
+                                        color: AppColors.error.withOpacity(0.6),
+                                        width: 1.5,
+                                      )
+                                    : null, // Border merah transparan kalau stok tipis
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,27 +353,75 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
                                   Expanded(
                                     child: Container(
                                       width: double.infinity,
-                                      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(16)),
-                                      child: (p['image_url'] != null && p['image_url'].toString().isNotEmpty)
-                                        ? ClipRRect(
-                                            borderRadius: BorderRadius.circular(16), 
-                                            child: Image.network(p['image_url'], fit: BoxFit.cover, errorBuilder: (c,e,s) => const Icon(Icons.broken_image, color: AppColors.textGrey))
-                                          )
-                                        : const Icon(Icons.inventory_2_outlined, color: AppColors.textGrey),
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade100,
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child:
+                                          (p['image_url'] != null &&
+                                              p['image_url']
+                                                  .toString()
+                                                  .isNotEmpty)
+                                          ? ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              child: Image.network(
+                                                p['image_url'],
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (c, e, s) =>
+                                                    const Icon(
+                                                      Icons.broken_image,
+                                                      color: AppColors.textGrey,
+                                                    ),
+                                              ),
+                                            )
+                                          : const Icon(
+                                              Icons.inventory_2_outlined,
+                                              color: AppColors.textGrey,
+                                            ),
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(p['name_product'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87), maxLines: 1, overflow: TextOverflow.ellipsis), // Nama produk hitam
+                                  Text(
+                                    p['name_product'] ?? '',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: Colors.black87,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ), // Nama produk hitam
                                   const SizedBox(height: 4),
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Text(isLowStock ? "Menipis!" : "Aman", style: TextStyle(fontSize: 9, color: isLowStock ? AppColors.error : AppColors.textGrey, fontWeight: FontWeight.bold)), // Peringatan merah
-                                          Text("$qty $unit", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: isLowStock ? AppColors.error : AppColors.primary)), // Stok merah atau toska
+                                          Text(
+                                            isLowStock ? "Menipis!" : "Aman",
+                                            style: TextStyle(
+                                              fontSize: 9,
+                                              color: isLowStock
+                                                  ? AppColors.error
+                                                  : AppColors.textGrey,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ), // Peringatan merah
+                                          Text(
+                                            "$qty $unit",
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 12,
+                                              color: isLowStock
+                                                  ? AppColors.error
+                                                  : AppColors.primary,
+                                            ),
+                                          ), // Stok merah atau toska
                                         ],
                                       ),
                                       InkWell(
@@ -267,12 +429,21 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
                                         borderRadius: BorderRadius.circular(8),
                                         child: Container(
                                           padding: const EdgeInsets.all(6),
-                                          decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)), // Tombol (+) toska
-                                          child: const Icon(Icons.add, color: Colors.white, size: 16),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ), // Tombol (+) toska
+                                          child: const Icon(
+                                            Icons.add,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
                                         ),
-                                      )
+                                      ),
                                     ],
-                                  )
+                                  ),
                                 ],
                               ),
                             );
@@ -292,17 +463,25 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white, // Toska kalau dipilih
+          color: isSelected
+              ? AppColors.primary
+              : Colors.white, // Toska kalau dipilih
           borderRadius: BorderRadius.circular(20),
-          border: isSelected ? null : Border.all(color: Colors.grey.shade200), // Kasih border tipis kalau gak dipilih
+          border: isSelected
+              ? null
+              : Border.all(
+                  color: Colors.grey.shade200,
+                ), // Kasih border tipis kalau gak dipilih
         ),
         child: Text(
-          label, 
+          label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black87, // Teks putih atau hitam
+            color: isSelected
+                ? Colors.white
+                : Colors.black87, // Teks putih atau hitam
             fontSize: 13,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
-          )
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );

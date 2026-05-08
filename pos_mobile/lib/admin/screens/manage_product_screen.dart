@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // --- IMPORT PATH ---
 import '../../theme/colors.dart'; // MENGGUNAKAN AppColors
 import 'admin_drawer.dart'; // IMPORT DRAWER SENTRAL
+import '../../services/audit_service.dart';
+import '../../services/session_service.dart';
 
 class ManageProductScreen extends StatefulWidget {
   const ManageProductScreen({super.key});
@@ -17,7 +19,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
   final supabase = Supabase.instance.client;
 
   String selectedFilter = "Semua";
-  String searchQuery = ""; 
+  String searchQuery = "";
   bool isLoading = true;
 
   List<Map<String, dynamic>> dbProducts = [];
@@ -26,30 +28,32 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchData(); 
+    _fetchData();
   }
 
   // --- 1. AMBIL DATA LENGKAP ---
   Future<void> _fetchData() async {
     setState(() => isLoading = true);
+
     try {
       final catResponse = await supabase
           .from('ms_category_product')
-          .select('id, category_name');
-      
+          .select('id, category_name')
+          .isFilter('deleted_at', null);
+
       final prodResponse = await supabase
           .from('ms_product')
           .select('''
-            id, 
-            name_product, 
-            purchase_price,
-            selling_price, 
-            qty, 
-            unit,
-            image_url,
-            category_id, 
-            ms_category_product (category_name)
-          ''')
+          id, 
+          name_product, 
+          purchase_price,
+          selling_price, 
+          qty, 
+          unit,
+          image_url,
+          category_id, 
+          ms_category_product (category_name)
+        ''')
           .eq('is_active', true)
           .order('name_product', ascending: true);
 
@@ -60,6 +64,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
       });
     } catch (e) {
       setState(() => isLoading = false);
+
       _showSnackBar("Gagal mengambil data: $e", isError: true);
     }
   }
@@ -69,13 +74,37 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     try {
       if (id == null) {
         data['is_active'] = true;
+        data['created_by'] = SessionService.userId;
+
         await supabase.from('ms_product').insert(data);
+
+        // AUDIT CREATE
+        await AuditService.logActivity(
+          action: 'ADD PRODUCT',
+          detail: 'Menambahkan produk ${data['name_product']}',
+          type: 'create',
+          userId: SessionService.userId,
+        );
+
         _showSnackBar("Produk berhasil ditambahkan!");
       } else {
+        data['updated_by'] = SessionService.userId;
+        data['updated_at'] = DateTime.now().toIso8601String();
+
         await supabase.from('ms_product').update(data).eq('id', id);
+
+        // AUDIT UPDATE
+        await AuditService.logActivity(
+          action: 'UPDATE PRODUCT',
+          detail: 'Mengubah produk ${data['name_product']}',
+          type: 'update',
+          userId: SessionService.userId,
+        );
+
         _showSnackBar("Produk berhasil diupdate!");
       }
-      _fetchData(); 
+
+      _fetchData();
     } catch (e) {
       _showSnackBar("Gagal menyimpan data.", isError: true);
     }
@@ -84,9 +113,26 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
   // --- 3. SOFT DELETE ---
   Future<void> _hapusProdukAman(dynamic id, String namaProduk) async {
     try {
-      await supabase.from('ms_product').update({'is_active': false}).eq('id', id);
+      await supabase
+          .from('ms_product')
+          .update({
+            'is_active': false,
+            'deleted_by': SessionService.userId,
+            'deleted_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', id);
+
+      // AUDIT DELETE
+      await AuditService.logActivity(
+        action: 'DELETE PRODUCT',
+        detail: 'Menghapus produk $namaProduk',
+        type: 'delete',
+        userId: SessionService.userId,
+      );
+
       _showSnackBar("$namaProduk berhasil dihapus!");
-      _fetchData(); 
+
+      _fetchData();
     } catch (e) {
       _showSnackBar("Gagal menghapus produk.", isError: true);
     }
@@ -94,7 +140,11 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
 
   String formatRupiah(dynamic amount) {
     int finalAmount = (amount is num) ? amount.toInt() : 0;
-    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(finalAmount);
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(finalAmount);
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -102,7 +152,9 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? AppColors.error : AppColors.primary, // Merah untuk error, Toska untuk sukses
+        backgroundColor: isError
+            ? AppColors.error
+            : AppColors.primary, // Merah untuk error, Toska untuk sukses
       ),
     );
   }
@@ -115,24 +167,36 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     }
 
     final bool isEdit = produkYangDiedit != null;
-    final TextEditingController nameController = TextEditingController(text: isEdit ? produkYangDiedit['name_product'] : '');
+    final TextEditingController nameController = TextEditingController(
+      text: isEdit ? produkYangDiedit['name_product'] : '',
+    );
     final TextEditingController purchasePriceController = TextEditingController(
-      text: isEdit ? (produkYangDiedit['purchase_price'] as num?)?.toInt().toString() ?? '0' : ''
+      text: isEdit
+          ? (produkYangDiedit['purchase_price'] as num?)?.toInt().toString() ??
+                '0'
+          : '',
     );
     final TextEditingController sellingPriceController = TextEditingController(
-      text: isEdit ? (produkYangDiedit['selling_price'] as num?)?.toInt().toString() ?? '0' : ''
+      text: isEdit
+          ? (produkYangDiedit['selling_price'] as num?)?.toInt().toString() ??
+                '0'
+          : '',
     );
     final TextEditingController qtyController = TextEditingController(
-      text: isEdit ? (produkYangDiedit['qty'] as num?)?.toInt().toString() ?? '0' : '0'
+      text: isEdit
+          ? (produkYangDiedit['qty'] as num?)?.toInt().toString() ?? '0'
+          : '0',
     );
     final TextEditingController unitController = TextEditingController(
-      text: isEdit ? (produkYangDiedit['unit'] ?? 'pcs') : 'pcs'
+      text: isEdit ? (produkYangDiedit['unit'] ?? 'pcs') : 'pcs',
     );
     final TextEditingController imageController = TextEditingController(
-      text: isEdit ? (produkYangDiedit['image_url'] ?? '') : ''
+      text: isEdit ? (produkYangDiedit['image_url'] ?? '') : '',
     );
 
-    dynamic selectedCategoryId = isEdit ? produkYangDiedit['category_id'] : dbCategories.first['id'];
+    dynamic selectedCategoryId = isEdit
+        ? produkYangDiedit['category_id']
+        : dbCategories.first['id'];
 
     showModalBottomSheet(
       context: context,
@@ -142,47 +206,124 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Container(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 24, left: 24, right: 24),
-              decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                top: 24,
+                left: 24,
+                right: 24,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
               child: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(isEdit ? "Edit Produk" : "Tambah Produk Baru", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)), // Judul Hitam
+                    Text(
+                      isEdit ? "Edit Produk" : "Tambah Produk Baru",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ), // Judul Hitam
                     const SizedBox(height: 16),
-                    _buildTextField("Nama Produk", Icons.inventory_2_outlined, nameController, TextInputType.text),
+                    _buildTextField(
+                      "Nama Produk",
+                      Icons.inventory_2_outlined,
+                      nameController,
+                      TextInputType.text,
+                    ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: _buildTextField("Harga Beli", Icons.shopping_bag_outlined, purchasePriceController, TextInputType.number)),
+                        Expanded(
+                          child: _buildTextField(
+                            "Harga Beli",
+                            Icons.shopping_bag_outlined,
+                            purchasePriceController,
+                            TextInputType.number,
+                          ),
+                        ),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildTextField("Harga Jual", Icons.payments_outlined, sellingPriceController, TextInputType.number)),
+                        Expanded(
+                          child: _buildTextField(
+                            "Harga Jual",
+                            Icons.payments_outlined,
+                            sellingPriceController,
+                            TextInputType.number,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(child: _buildTextField("Stok", Icons.numbers, qtyController, TextInputType.number)),
+                        Expanded(
+                          child: _buildTextField(
+                            "Stok",
+                            Icons.numbers,
+                            qtyController,
+                            TextInputType.number,
+                          ),
+                        ),
                         const SizedBox(width: 12),
-                        Expanded(child: _buildTextField("Satuan", Icons.straighten, unitController, TextInputType.text)),
+                        Expanded(
+                          child: _buildTextField(
+                            "Satuan",
+                            Icons.straighten,
+                            unitController,
+                            TextInputType.text,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildTextField("URL Gambar", Icons.image_outlined, imageController, TextInputType.url),
+                    _buildTextField(
+                      "URL Gambar",
+                      Icons.image_outlined,
+                      imageController,
+                      TextInputType.url,
+                    ),
                     const SizedBox(height: 12),
-                    const Text("Pilih Kategori", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textGrey)),
+                    const Text(
+                      "Pilih Kategori",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textGrey,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(16)),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<dynamic>(
                           isExpanded: true,
                           value: selectedCategoryId,
-                          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600), // Teks dropdown hitam
-                          items: dbCategories.map((cat) => DropdownMenuItem(value: cat['id'], child: Text(cat['category_name'] ?? 'Unknown'))).toList(),
-                          onChanged: (newValue) => setModalState(() => selectedCategoryId = newValue),
+                          style: const TextStyle(
+                            color: Colors.black87,
+                            fontWeight: FontWeight.w600,
+                          ), // Teks dropdown hitam
+                          items: dbCategories
+                              .map(
+                                (cat) => DropdownMenuItem(
+                                  value: cat['id'],
+                                  child: Text(
+                                    cat['category_name'] ?? 'Unknown',
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (newValue) => setModalState(
+                            () => selectedCategoryId = newValue,
+                          ),
                         ),
                       ),
                     ),
@@ -195,23 +336,39 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                           backgroundColor: AppColors.primary, // Toska solid
                           foregroundColor: Colors.white,
                           elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                         onPressed: () {
                           if (nameController.text.isEmpty) return;
                           Map<String, dynamic> data = {
                             'name_product': nameController.text,
-                            'purchase_price': int.tryParse(purchasePriceController.text) ?? 0,
-                            'selling_price': int.tryParse(sellingPriceController.text) ?? 0,
+                            'purchase_price':
+                                int.tryParse(purchasePriceController.text) ?? 0,
+                            'selling_price':
+                                int.tryParse(sellingPriceController.text) ?? 0,
                             'qty': int.tryParse(qtyController.text) ?? 0,
                             'unit': unitController.text,
                             'category_id': selectedCategoryId,
-                            'image_url': imageController.text.isEmpty ? null : imageController.text,
+                            'image_url': imageController.text.isEmpty
+                                ? null
+                                : imageController.text,
                           };
-                          _saveProduct(data, id: isEdit ? produkYangDiedit['id'] : null);
+                          _saveProduct(
+                            data,
+                            id: isEdit ? produkYangDiedit['id'] : null,
+                          );
                           Navigator.pop(context);
                         },
-                        child: const Text("SIMPAN PRODUK", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, letterSpacing: 1.1)),
+                        child: const Text(
+                          "SIMPAN PRODUK",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -225,22 +382,44 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     );
   }
 
-  Widget _buildTextField(String label, IconData icon, TextEditingController controller, TextInputType type) {
+  Widget _buildTextField(
+    String label,
+    IconData icon,
+    TextEditingController controller,
+    TextInputType type,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textGrey)),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textGrey,
+          ),
+        ),
         const SizedBox(height: 4),
         Container(
-          decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(16)),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(16),
+          ),
           child: TextField(
             controller: controller,
             keyboardType: type,
-            style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600), // Teks input hitam
+            style: const TextStyle(
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
+            ), // Teks input hitam
             decoration: InputDecoration(
-              prefixIcon: Icon(icon, color: AppColors.primary, size: 20), // Icon Toska
-              border: InputBorder.none, 
-              contentPadding: const EdgeInsets.symmetric(vertical: 14)
+              prefixIcon: Icon(
+                icon,
+                color: AppColors.primary,
+                size: 20,
+              ), // Icon Toska
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14),
             ),
           ),
         ),
@@ -253,8 +432,11 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     // Logika Filter & Search
     final filteredProducts = dbProducts.where((p) {
       String catName = p['ms_category_product']?['category_name'] ?? 'Lainnya';
-      bool matchesFilter = (selectedFilter == "Semua" || catName == selectedFilter);
-      bool matchesSearch = p['name_product'].toString().toLowerCase().contains(searchQuery.toLowerCase());
+      bool matchesFilter =
+          (selectedFilter == "Semua" || catName == selectedFilter);
+      bool matchesSearch = p['name_product'].toString().toLowerCase().contains(
+        searchQuery.toLowerCase(),
+      );
       return matchesFilter && matchesSearch;
     }).toList();
 
@@ -264,72 +446,96 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgLight, // Background toska muda
       drawer: const SizedBox(
-        width: 260, 
-        child: AdminDrawer(activeMenu: "Manage Products") // DRAWER SENTRAL
+        width: 260,
+        child: AdminDrawer(activeMenu: "Manage Products"), // DRAWER SENTRAL
       ),
       appBar: AppBar(
-        backgroundColor: AppColors.bgLight, 
-        elevation: 0, 
-        centerTitle: true, 
-        iconTheme: const IconThemeData(color: Colors.black87), // Icon back hitam
-        title: const Text("Manage Products", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        backgroundColor: AppColors.bgLight,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(
+          color: Colors.black87,
+        ), // Icon back hitam
+        title: const Text(
+          "Manage Products",
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary, // Toska
-        onPressed: () => _tampilFormProduk(), 
-        child: const Icon(Icons.add, color: Colors.white)
+        onPressed: () => _tampilFormProduk(),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       body: isLoading
-        ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-        : Column(
-            children: [
-              // 1. SEARCH BAR
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white, 
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))]
-                  ),
-                  child: TextField(
-                    onChanged: (val) => setState(() => searchQuery = val),
-                    style: const TextStyle(color: Colors.black87),
-                    decoration: const InputDecoration(
-                      icon: Icon(Icons.search, color: AppColors.textGrey), 
-                      hintText: "Search product...", 
-                      hintStyle: TextStyle(color: AppColors.textGrey),
-                      border: InputBorder.none
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
+          : Column(
+              children: [
+                // 1. SEARCH BAR
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.02),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      onChanged: (val) => setState(() => searchQuery = val),
+                      style: const TextStyle(color: Colors.black87),
+                      decoration: const InputDecoration(
+                        icon: Icon(Icons.search, color: AppColors.textGrey),
+                        hintText: "Search product...",
+                        hintStyle: TextStyle(color: AppColors.textGrey),
+                        border: InputBorder.none,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              // 2. KATEGORI FILTER (CHIPS)
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(children: filterList.map((k) => _buildFilterChip(k)).toList()),
-              ),
-              const SizedBox(height: 12),
-              // 3. LIST PRODUK
-              Expanded(
-                child: filteredProducts.isEmpty
-                  ? const Center(child: Text("Tidak ada produk.", style: TextStyle(color: AppColors.textGrey)))
-                  : GridView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2, 
-                        crossAxisSpacing: 16, 
-                        mainAxisSpacing: 16, 
-                        childAspectRatio: 0.72
-                      ),
-                      itemCount: filteredProducts.length,
-                      itemBuilder: (context, index) => _buildProductCard(filteredProducts[index]),
-                    ),
-              ),
-            ],
-          ),
+                // 2. KATEGORI FILTER (CHIPS)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: filterList
+                        .map((k) => _buildFilterChip(k))
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // 3. LIST PRODUK
+                Expanded(
+                  child: filteredProducts.isEmpty
+                      ? const Center(
+                          child: Text(
+                            "Tidak ada produk.",
+                            style: TextStyle(color: AppColors.textGrey),
+                          ),
+                        )
+                      : GridView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 16,
+                                mainAxisSpacing: 16,
+                                childAspectRatio: 0.72,
+                              ),
+                          itemCount: filteredProducts.length,
+                          itemBuilder: (context, index) =>
+                              _buildProductCard(filteredProducts[index]),
+                        ),
+                ),
+              ],
+            ),
     );
   }
 
@@ -337,9 +543,15 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white, 
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))]
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -349,37 +561,91 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
               children: [
                 Container(
                   width: double.infinity,
-                  decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(16)),
-                  child: (p['image_url'] != null && p['image_url'].toString().isNotEmpty)
-                    ? ClipRRect(borderRadius: BorderRadius.circular(16), child: Image.network(p['image_url'], fit: BoxFit.cover, errorBuilder: (c,e,s) => const Icon(Icons.broken_image, color: AppColors.textGrey)))
-                    : const Icon(Icons.inventory_2_outlined, color: AppColors.textGrey),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child:
+                      (p['image_url'] != null &&
+                          p['image_url'].toString().isNotEmpty)
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            p['image_url'],
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => const Icon(
+                              Icons.broken_image,
+                              color: AppColors.textGrey,
+                            ),
+                          ),
+                        )
+                      : const Icon(
+                          Icons.inventory_2_outlined,
+                          color: AppColors.textGrey,
+                        ),
                 ),
                 Positioned(
-                  top: 0, right: 0,
+                  top: 0,
+                  right: 0,
                   child: PopupMenuButton<String>(
                     icon: const Icon(Icons.more_vert, color: Colors.black54),
                     onSelected: (val) {
                       if (val == 'edit') _tampilFormProduk(p);
-                      if (val == 'delete') _konfirmasiHapus(p['id'], p['name_product']);
+                      if (val == 'delete')
+                        _konfirmasiHapus(p['id'], p['name_product']);
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(value: 'edit', child: Text("Edit", style: TextStyle(color: Colors.black87))),
-                      const PopupMenuItem(value: 'delete', child: Text("Hapus", style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold))), // Merah
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text(
+                          "Edit",
+                          style: TextStyle(color: Colors.black87),
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text(
+                          "Hapus",
+                          style: TextStyle(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ), // Merah
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),
           const SizedBox(height: 8),
-          Text(p['name_product'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87), maxLines: 1, overflow: TextOverflow.ellipsis), // Nama produk hitam
+          Text(
+            p['name_product'] ?? '',
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              color: Colors.black87,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ), // Nama produk hitam
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("${(p['qty'] as num?)?.toInt() ?? 0} ${p['unit'] ?? 'pcs'}", style: const TextStyle(fontSize: 10, color: AppColors.textGrey)),
-              Text(formatRupiah(p['selling_price']), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppColors.primaryDark)), // Harga toska gelap
+              Text(
+                "${(p['qty'] as num?)?.toInt() ?? 0} ${p['unit'] ?? 'pcs'}",
+                style: const TextStyle(fontSize: 10, color: AppColors.textGrey),
+              ),
+              Text(
+                formatRupiah(p['selling_price']),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: AppColors.primaryDark,
+                ),
+              ), // Harga toska gelap
             ],
-          )
+          ),
         ],
       ),
     );
@@ -393,17 +659,21 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white, // Toska jika dipilih
+          color: isSelected
+              ? AppColors.primary
+              : Colors.white, // Toska jika dipilih
           borderRadius: BorderRadius.circular(20),
-          border: isSelected ? null : Border.all(color: Colors.grey.shade200)
+          border: isSelected ? null : Border.all(color: Colors.grey.shade200),
         ),
         child: Text(
-          label, 
+          label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black87, // Teks putih atau hitam
+            color: isSelected
+                ? Colors.white
+                : Colors.black87, // Teks putih atau hitam
             fontSize: 13,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
-          )
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
@@ -414,11 +684,38 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Hapus Produk?", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
-        content: Text("Yakin mau menghapus '$name'?", style: const TextStyle(color: Colors.black87)),
+        title: const Text(
+          "Hapus Produk?",
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          "Yakin mau menghapus '$name'?",
+          style: const TextStyle(color: Colors.black87),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Batal", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold))),
-          TextButton(onPressed: () { Navigator.pop(ctx); _hapusProdukAman(id, name); }, child: const Text("Hapus", style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold))), // Tombol hapus merah
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text(
+              "Batal",
+              style: TextStyle(
+                color: AppColors.textGrey,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _hapusProdukAman(id, name);
+            },
+            child: const Text(
+              "Hapus",
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ), // Tombol hapus merah
         ],
       ),
     );

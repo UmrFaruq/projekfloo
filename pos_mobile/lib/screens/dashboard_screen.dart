@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; 
-import 'package:intl/intl.dart'; 
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT SUPABASE
 
 import '../theme/colors.dart';
 import '../data/order_data.dart';
 import '../data/shift_data.dart';
-import '../data/report_helper.dart'; 
+import '../data/report_helper.dart';
 import 'sales_screen.dart';
-import 'cashier_drawer.dart'; 
+import 'cashier_drawer.dart';
 
 // --- NOTIFIER BARU KHUSUS UNTUK DATA TRANSAKSI DARI SUPABASE ---
-final ValueNotifier<List<Map<String, dynamic>>> supabaseRecentOrders = ValueNotifier([]);
+final ValueNotifier<List<Map<String, dynamic>>> supabaseRecentOrders =
+    ValueNotifier([]);
 
 // --- FUNGSI GLOBAL UNTUK POP-UP WARNING ---
 void showWarningPopup(BuildContext context, String title, String message) {
@@ -23,14 +24,30 @@ void showWarningPopup(BuildContext context, String title, String message) {
         children: [
           const Icon(Icons.warning_amber_rounded, color: AppColors.error),
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: Colors.black87,
+            ),
+          ),
         ],
       ),
-      content: Text(message, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+      content: Text(
+        message,
+        style: const TextStyle(fontSize: 14, color: Colors.black87),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text("OK", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold)),
+          child: const Text(
+            "OK",
+            style: TextStyle(
+              color: AppColors.textGrey,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ],
     ),
@@ -39,7 +56,11 @@ void showWarningPopup(BuildContext context, String title, String message) {
 
 // --- FUNGSI GLOBAL UNTUK FORMAT RUPIAH ---
 String formatRupiah(int amount) {
-  return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
+  return NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  ).format(amount);
 }
 
 class DashboardScreen extends StatelessWidget {
@@ -51,7 +72,7 @@ class DashboardScreen extends StatelessWidget {
       backgroundColor: AppColors.bgLight,
       drawer: const SizedBox(
         width: 250,
-        child: CashierDrawer(activeMenu: "Dashboard"), 
+        child: CashierDrawer(activeMenu: "Dashboard"),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -93,13 +114,17 @@ class DashboardHeader extends StatelessWidget {
             ),
             const Text(
               "Dashboard",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87), 
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
             Container(
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppColors.primary, 
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.person_outline, color: Colors.white),
@@ -108,11 +133,11 @@ class DashboardHeader extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         const Text(
-          "Hello, Kasir! 👋", 
+          "Hello, Kasir! 👋",
           style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.bold,
-            color: Colors.black87, 
+            color: Colors.black87,
           ),
         ),
       ],
@@ -129,7 +154,7 @@ class ShiftSummaryCard extends StatefulWidget {
 
 class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
   final TextEditingController openingController = TextEditingController();
-  DateTime? _shiftStartTime; 
+  DateTime? _shiftStartTime;
 
   // Variabel untuk nyimpen omzet asli dari Supabase
   int totalRevenue = 0;
@@ -148,20 +173,22 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
   Future<void> _loadShiftSummary() async {
     try {
       final supabase = Supabase.instance.client;
-      
+
       // 1. Cari shift yang lagi buka
-      final shiftData = await supabase.from('tr_shift')
+      final shiftData = await supabase
+          .from('tr_shift')
           .select('id, shift_start, initial_capital')
           .eq('status', 'open')
           .maybeSingle();
-      
+
       if (shiftData != null) {
         shiftActive.value = true;
         openingBalance.value = shiftData['initial_capital'] ?? 0;
         _shiftStartTime = DateTime.parse(shiftData['shift_start']);
 
         // 2. Tarik semua data penjualan di shift ini
-        final sales = await supabase.from('tr_sales')
+        final sales = await supabase
+            .from('tr_sales')
             .select('total, payment_method, ms_customer(name)')
             .eq('shift_id', shiftData['id'])
             .order('created_at', ascending: false);
@@ -174,13 +201,15 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
         for (var s in sales) {
           int t = s['total'] ?? 0;
           tempRev += t;
-          
+
           String method = s['payment_method'] ?? 'cash';
           if (method == 'cash') tempCash += t;
           if (method == 'qris') tempQris += t;
 
           tempOrders.add({
-            'customer': s['ms_customer'] != null ? s['ms_customer']['name'] : 'Pelanggan Umum',
+            'customer': s['ms_customer'] != null
+                ? s['ms_customer']['name']
+                : 'Pelanggan Umum',
             'payment_method': method,
             'total': t,
           });
@@ -193,10 +222,9 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
           qrisSales = tempQris;
           totalTransactions = sales.length;
         });
-        
+
         // 4. Update data list transaksi terbaru
         supabaseRecentOrders.value = tempOrders;
-
       } else {
         shiftActive.value = false;
         openingBalance.value = 0;
@@ -224,20 +252,31 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
     int balance = int.tryParse(cleanText) ?? 0;
 
     if (balance <= 0) {
-      showWarningPopup(context, "Perhatian", "Opening balance harus lebih dari 0.");
+      showWarningPopup(
+        context,
+        "Perhatian",
+        "Opening balance harus lebih dari 0.",
+      );
       return;
     }
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      builder: (ctx) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
     );
 
     try {
       final supabase = Supabase.instance.client;
 
-      final user = await supabase.from('ms_user').select('id').eq('role', 'kasir').limit(1).single();
+      final user = await supabase
+          .from('ms_user')
+          .select('id')
+          .eq('role', 'kasir')
+          .limit(1)
+          .single();
 
       await supabase.from('tr_shift').insert({
         'user_id': user['id'],
@@ -246,7 +285,7 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
       });
 
       if (mounted) Navigator.pop(context);
-      
+
       // Reload ulang datanya biar refresh
       await _loadShiftSummary();
 
@@ -257,7 +296,7 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
         );
       }
     } catch (e) {
-      if (mounted) Navigator.pop(context); 
+      if (mounted) Navigator.pop(context);
       showWarningPopup(context, "Gagal Buka Shift", "Pesan Error: $e");
     }
   }
@@ -267,8 +306,14 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Akhiri Shift?", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
-        content: const Text("Apakah kamu yakin ingin mengakhiri shift ini dan menyimpan laporannya?", style: TextStyle(color: Colors.black87)),
+        title: const Text(
+          "Akhiri Shift?",
+          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          "Apakah kamu yakin ingin mengakhiri shift ini dan menyimpan laporannya?",
+          style: TextStyle(color: Colors.black87),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -276,48 +321,67 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(ctx); 
+              Navigator.pop(ctx);
 
               showDialog(
                 context: context,
                 barrierDismissible: false,
-                builder: (ctx) => const Center(child: CircularProgressIndicator(color: AppColors.error)),
+                builder: (ctx) => const Center(
+                  child: CircularProgressIndicator(color: AppColors.error),
+                ),
               );
 
               try {
                 final supabase = Supabase.instance.client;
-                
-                final shiftData = await supabase.from('tr_shift').select('id').eq('status', 'open').maybeSingle();
-                
+
+                final shiftData = await supabase
+                    .from('tr_shift')
+                    .select('id')
+                    .eq('status', 'open')
+                    .maybeSingle();
+
                 if (shiftData != null) {
-                   await supabase.from('tr_shift').update({
-                     'status': 'closed',
-                     'shift_end': DateTime.now().toIso8601String(),
-                     'total_sales': totalRevenue, // SIMPAN OMZET ASLI SAAT TUTUP SHIFT
-                   }).eq('id', shiftData['id']);
+                  await supabase
+                      .from('tr_shift')
+                      .update({
+                        'status': 'closed',
+                        'shift_end': DateTime.now().toIso8601String(),
+                        'total_sales':
+                            totalRevenue, // SIMPAN OMZET ASLI SAAT TUTUP SHIFT
+                      })
+                      .eq('id', shiftData['id']);
                 }
 
-                if (mounted) Navigator.pop(context); 
+                if (mounted) Navigator.pop(context);
 
                 setState(() {
                   shiftActive.value = false;
                   openingBalance.value = 0;
-                  _shiftStartTime = null; 
+                  _shiftStartTime = null;
                   totalRevenue = 0;
                   cashSales = 0;
                   qrisSales = 0;
                   totalTransactions = 0;
                 });
-                
+
                 shiftOrders.value = [];
                 supabaseRecentOrders.value = [];
-
-              } catch(e) {
-                if (mounted) Navigator.pop(context); 
-                showWarningPopup(context, "Gagal Tutup Shift", "Pesan Error: $e");
+              } catch (e) {
+                if (mounted) Navigator.pop(context);
+                showWarningPopup(
+                  context,
+                  "Gagal Tutup Shift",
+                  "Pesan Error: $e",
+                );
               }
             },
-            child: const Text("Akhiri", style: TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+            child: const Text(
+              "Akhiri",
+              style: TextStyle(
+                color: AppColors.error,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -339,8 +403,8 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                 color: Colors.black.withOpacity(0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
-              )
-            ]
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,20 +421,27 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87, 
+                          color: Colors.black87,
                         ),
                       ),
                       if (active && _shiftStartTime != null) ...[
                         const SizedBox(height: 4),
                         Text(
                           "Started at: ${DateFormat('HH:mm').format(_shiftStartTime!)}",
-                          style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ]
+                      ],
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: active
                           ? AppColors.primary.withOpacity(0.15)
@@ -385,7 +456,7 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
               const SizedBox(height: 20),
@@ -395,14 +466,20 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
-                    CurrencyFormatInputFormatter(), 
+                    CurrencyFormatInputFormatter(),
                   ],
-                  style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
                   decoration: InputDecoration(
                     labelText: "Opening Balance",
                     labelStyle: const TextStyle(color: AppColors.textGrey),
-                    prefixText: "Rp ", 
-                    prefixStyle: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+                    prefixText: "Rp ",
+                    prefixStyle: const TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.bold,
+                    ),
                     filled: true,
                     fillColor: AppColors.bgLight,
                     border: OutlineInputBorder(
@@ -421,10 +498,22 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                 childAspectRatio: 1.8,
                 children: [
                   _stat("Opening Balance", formatRupiah(openingBalance.value)),
-                  _stat("Total Revenue", formatRupiah(totalRevenue)), // <-- DARI SUPABASE
-                  _stat("Cash Sales", formatRupiah(cashSales)),       // <-- DARI SUPABASE
-                  _stat("QRIS Sales", formatRupiah(qrisSales)),       // <-- DARI SUPABASE
-                  _stat("Transactions", "$totalTransactions"),        // <-- DARI SUPABASE
+                  _stat(
+                    "Total Revenue",
+                    formatRupiah(totalRevenue),
+                  ), // <-- DARI SUPABASE
+                  _stat(
+                    "Cash Sales",
+                    formatRupiah(cashSales),
+                  ), // <-- DARI SUPABASE
+                  _stat(
+                    "QRIS Sales",
+                    formatRupiah(qrisSales),
+                  ), // <-- DARI SUPABASE
+                  _stat(
+                    "Transactions",
+                    "$totalTransactions",
+                  ), // <-- DARI SUPABASE
                 ],
               ),
               const SizedBox(height: 20),
@@ -440,7 +529,9 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: active ? AppColors.error : AppColors.primary,
+                        backgroundColor: active
+                            ? AppColors.error
+                            : AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -459,11 +550,15 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                     child: ElevatedButton(
                       onPressed: () async {
                         // Fitur Laporan Excel bisa di-update nanti setelah tabel lengkap
-                        showWarningPopup(context, "Info", "Fitur Excel sedang disinkronisasi dengan Supabase.");
+                        showWarningPopup(
+                          context,
+                          "Info",
+                          "Fitur Excel sedang disinkronisasi dengan Supabase.",
+                        );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary, 
-                        foregroundColor: Colors.white, 
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -475,9 +570,9 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
-                  )
+                  ),
                 ],
-              )
+              ),
             ],
           ),
         );
@@ -508,9 +603,9 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
           Text(
             value,
             style: const TextStyle(
-              fontSize: 15, 
+              fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: Colors.black87, 
+              color: Colors.black87,
             ),
             overflow: TextOverflow.ellipsis,
           ),
@@ -539,8 +634,8 @@ class RecentTransactionsCard extends StatelessWidget {
                 color: Colors.black.withOpacity(0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
-              )
-            ]
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -550,14 +645,19 @@ class RecentTransactionsCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87, 
+                  color: Colors.black87,
                 ),
               ),
               const SizedBox(height: 20),
               if (orders.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(child: Text("No transactions yet", style: TextStyle(color: Colors.grey))),
+                  child: Center(
+                    child: Text(
+                      "No transactions yet",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
                 ),
               ...orders.take(5).map((order) {
                 return Padding(
@@ -571,28 +671,48 @@ class RecentTransactionsCard extends StatelessWidget {
                           color: AppColors.bgLight,
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.receipt_long, size: 20, color: AppColors.primary), 
+                        child: const Icon(
+                          Icons.receipt_long,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(order['customer'] ?? 'Pelanggan',
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)), 
-                            Text((order['payment_method'] ?? 'CASH').toString().toUpperCase(),
-                                style: const TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600))
+                            Text(
+                              order['customer'] ?? 'Pelanggan',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            Text(
+                              (order['payment_method'] ?? 'CASH')
+                                  .toString()
+                                  .toUpperCase(),
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ],
                         ),
                       ),
                       Text(
-                        formatRupiah(order['total'] ?? 0), 
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryDark), 
-                      )
+                        formatRupiah(order['total'] ?? 0),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primaryDark,
+                        ),
+                      ),
                     ],
                   ),
                 );
-              }).toList(), 
+              }),
             ],
           ),
         );
@@ -604,14 +724,21 @@ class RecentTransactionsCard extends StatelessWidget {
 // --- MESIN AUTO TITIK RUPIAH ---
 class CurrencyFormatInputFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if (newValue.selection.baseOffset == 0) return newValue;
 
     String cleanText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
     if (cleanText.isEmpty) return newValue.copyWith(text: '');
 
     final int value = int.parse(cleanText);
-    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
+    final formatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: '',
+      decimalDigits: 0,
+    );
     String newText = formatter.format(value).trim();
 
     return newValue.copyWith(
