@@ -71,12 +71,11 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
 
     try {
       final response = await supabase
-          .from('tr_shift')
+          .from('ms_shift_schedule')
           .select('''
           *,
-          ms_user!tr_shift_user_id_fkey(name, username)
+          ms_user(name, username)
         ''')
-          .isFilter('deleted_at', null)
           .order('created_at', ascending: false);
 
       shiftData = List<Map<String, dynamic>>.from(response).map((item) {
@@ -87,9 +86,11 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
           'nama_shift': item['shift_name'] ?? '-',
           'kasir':
               item['ms_user']?['name'] ?? item['ms_user']?['username'] ?? '-',
-          'jam_mulai': item['shift_start'] ?? '-',
-          'jam_selesai': item['shift_end'] ?? '-',
-          'status': item['status'] == 'open' ? 'Aktif' : 'Selesai',
+          'jam_mulai': item['start_time'] ?? '-',
+          'jam_selesai': item['end_time'] ?? '-',
+          'status': item['status'] == 'scheduled'
+              ? 'Belum Mulai'
+              : item['status'],
         };
       }).toList();
 
@@ -111,15 +112,13 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
         'user_id': selectedCashierId,
         'shift_name': _shiftNameController.text,
         'shift_date': _dateController.text,
-        'shift_start': _startTimeController.text,
-        'shift_end': _endTimeController.text,
-        'status': 'open',
-        'updated_at': DateTime.now().toIso8601String(),
-        'updated_by': SessionService.userId,
+        'start_time': _startTimeController.text,
+        'end_time': _endTimeController.text,
+        'status': 'scheduled',
       };
 
       if (shiftId == null) {
-        await supabase.from('tr_shift').insert({
+        await supabase.from('ms_shift_schedule').insert({
           ...data,
           'created_at': DateTime.now().toIso8601String(),
         });
@@ -132,7 +131,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
           userId: SessionService.userId,
         );
       } else {
-        await supabase.from('tr_shift').update(data).eq('id', shiftId);
+        await supabase.from('ms_shift_schedule').update(data).eq('id', shiftId);
 
         await AuditService.logActivity(
           action: "UPDATE SHIFT",
@@ -300,11 +299,8 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
             onPressed: () async {
               try {
                 await supabase
-                    .from('tr_shift')
-                    .update({
-                      'deleted_at': DateTime.now().toIso8601String(),
-                      'deleted_by': SessionService.userId,
-                    })
+                    .from('ms_shift_schedule')
+                    .delete()
                     .eq('id', shift['id']);
 
                 await AuditService.logActivity(

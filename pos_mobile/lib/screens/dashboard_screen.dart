@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT SUPABASE
+import '../services/session_service.dart';
 
 import '../theme/colors.dart';
 import '../data/order_data.dart';
@@ -132,9 +133,9 @@ class DashboardHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        const Text(
-          "Hello, Kasir! 👋",
-          style: TextStyle(
+        Text(
+          "Hello, ${SessionService.username ?? 'Kasir'} 👋",
+          style: const TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.bold,
             color: Colors.black87,
@@ -271,17 +272,42 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
     try {
       final supabase = Supabase.instance.client;
 
-      final user = await supabase
-          .from('ms_user')
+      final user = {
+        'id': SessionService.userId,
+        'username': SessionService.username,
+        'role': SessionService.role,
+      };
+
+      final existingShift = await supabase
+          .from('tr_shift')
           .select('id')
-          .eq('role', 'kasir')
-          .limit(1)
-          .single();
+          .eq('user_id', SessionService.userId!)
+          .eq('status', 'open')
+          .maybeSingle();
+
+      if (existingShift != null) {
+        if (mounted) Navigator.pop(context);
+
+        showWarningPopup(
+          context,
+          "Shift Masih Aktif",
+          "Kasir ini masih memiliki shift yang belum ditutup.",
+        );
+        return;
+      }
 
       await supabase.from('tr_shift').insert({
         'user_id': user['id'],
         'initial_capital': balance,
         'status': 'open',
+        'shift_start': DateTime.now().toIso8601String(),
+      });
+
+      await supabase.from('audit_trail').insert({
+        'user_id': user['id'],
+        'action': 'Start Shift',
+        'detail': 'Kasir membuka shift baru',
+        'type': 'shift',
       });
 
       if (mounted) Navigator.pop(context);
