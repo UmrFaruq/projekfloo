@@ -26,16 +26,13 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
 
   // --- CONTROLLER UNTUK FORM TAMBAH/EDIT JADWAL ---
   final TextEditingController _shiftNameController = TextEditingController();
-  final TextEditingController _dateController =
-      TextEditingController(); // TAMBAHAN: Buat Tanggal
+  final TextEditingController _dateController = TextEditingController();
   final TextEditingController _startTimeController = TextEditingController();
   final TextEditingController _endTimeController = TextEditingController();
 
-  // --- DATA DUMMY SEMENTARA (Ditambahin Tanggal) ---
   final SupabaseClient supabase = Supabase.instance.client;
 
   List<Map<String, dynamic>> shiftData = [];
-
   List<Map<String, dynamic>> cashierList = [];
   String? selectedCashierId;
 
@@ -66,10 +63,21 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
     }
   }
 
+  // 🔥 FUNGSI SINKRONISASI JADWAL & SHIFT AKTIF 🔥
   Future<void> _fetchShiftData() async {
     setState(() => isLoading = true);
 
     try {
+      // 1. Cek dulu, kasir mana saja yang saat ini lagi "OPEN SHIFT"
+      final activeShiftsRes = await supabase
+          .from('tr_shift')
+          .select('user_id')
+          .eq('status', 'open');
+
+      // Buat daftar ID Kasir yang lagi online
+      List<String> activeUserIds = activeShiftsRes.map((e) => e['user_id'].toString()).toList();
+
+      // 2. Tarik data rencana jadwal seperti biasa
       final response = await supabase
           .from('ms_shift_schedule')
           .select('''
@@ -78,19 +86,27 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
         ''')
           .order('created_at', ascending: false);
 
+      // 3. Cocokkan datanya
       shiftData = List<Map<String, dynamic>>.from(response).map((item) {
+        String userId = item['user_id'].toString();
+        String currentStatus = item['status'];
+
+        // Jika kasir di jadwal ini ternyata masuk daftar "Lagi Online", ubah statusnya jadi Aktif!
+        if (activeUserIds.contains(userId)) {
+          currentStatus = 'Aktif';
+        } else if (currentStatus == 'scheduled') {
+          currentStatus = 'Belum Mulai';
+        }
+
         return {
           'id': item['id'],
           'user_id': item['user_id'],
           'tanggal': item['shift_date'] ?? '-',
           'nama_shift': item['shift_name'] ?? '-',
-          'kasir':
-              item['ms_user']?['name'] ?? item['ms_user']?['username'] ?? '-',
+          'kasir': item['ms_user']?['name'] ?? item['ms_user']?['username'] ?? '-',
           'jam_mulai': item['start_time'] ?? '-',
           'jam_selesai': item['end_time'] ?? '-',
-          'status': item['status'] == 'scheduled'
-              ? 'Belum Mulai'
-              : item['status'],
+          'status': currentStatus, // <-- Status yang sudah tersinkronisasi
         };
       }).toList();
 
@@ -125,8 +141,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
 
         await AuditService.logActivity(
           action: "ADD SHIFT",
-          detail:
-              "Menambahkan shift ${_shiftNameController.text} untuk ${cashier['name'] ?? cashier['username']}",
+          detail: "Menambahkan shift ${_shiftNameController.text} untuk ${cashier['name'] ?? cashier['username']}",
           type: "create",
           userId: SessionService.userId,
         );
@@ -182,21 +197,17 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
       return;
     }
 
-    // Urutkan jadwal biar rapi (opsional)
     String textBagikan = "*📅 JADWAL SHIFT KASIR PRESTO 📅*\n\n";
 
     for (var shift in shiftData) {
       textBagikan += "🗓️ *Tanggal:* ${shift['tanggal']}\n";
-      textBagikan +=
-          "⏰ *Shift:* ${shift['nama_shift']} (${shift['jam_mulai']} - ${shift['jam_selesai']})\n";
+      textBagikan += "⏰ *Shift:* ${shift['nama_shift']} (${shift['jam_mulai']} - ${shift['jam_selesai']})\n";
       textBagikan += "👤 *Kasir:* ${shift['kasir']}\n";
       textBagikan += "--------------------------------\n";
     }
 
-    textBagikan +=
-        "\n_Mohon hadir 15 menit sebelum shift dimulai. Terima kasih!_";
+    textBagikan += "\n_Mohon hadir 15 menit sebelum shift dimulai. Terima kasih!_";
 
-    // Panggil fungsi share ke HP
     Share.share(textBagikan);
   }
 
@@ -231,9 +242,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
   void _showAddShiftSheet() {
     _shiftNameController.clear();
     selectedCashierId = null;
-    _dateController.text = DateFormat(
-      'dd MMM yyyy',
-    ).format(DateTime.now()); // Default hari ini
+    _dateController.text = DateFormat('dd MMM yyyy').format(DateTime.now()); 
     _startTimeController.clear();
     _endTimeController.clear();
 
@@ -257,8 +266,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) =>
-          _buildShiftFormContainer(isEdit: true, index: index),
+      builder: (context) => _buildShiftFormContainer(isEdit: true, index: index),
     );
   }
 
@@ -371,25 +379,24 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
-            ), // Judul hitam
+            ), 
             const SizedBox(height: 24),
 
-            // Kolom Tanggal (Ditambahin)
             TextField(
               controller: _dateController,
-              readOnly: true, // Biar kalender yang muncul, bukan keyboard
+              readOnly: true, 
               onTap: () => _selectDate(context),
               style: const TextStyle(
                 color: Colors.black87,
                 fontWeight: FontWeight.w600,
-              ), // Teks input hitam
+              ), 
               decoration: InputDecoration(
                 labelText: "Tanggal Shift",
                 labelStyle: const TextStyle(color: AppColors.textGrey),
                 prefixIcon: const Icon(
                   Icons.calendar_month,
                   color: AppColors.primary,
-                ), // Icon toska
+                ), 
                 filled: true,
                 fillColor: Colors.grey.shade50,
                 border: OutlineInputBorder(
@@ -460,7 +467,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
               height: 55,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary, // Toska
+                  backgroundColor: AppColors.primary, 
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -506,11 +513,11 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
       style: const TextStyle(
         color: Colors.black87,
         fontWeight: FontWeight.w600,
-      ), // Teks input hitam
+      ), 
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: AppColors.textGrey),
-        prefixIcon: Icon(icon, color: AppColors.primary), // Icon toska
+        prefixIcon: Icon(icon, color: AppColors.primary), 
         filled: true,
         fillColor: Colors.grey.shade50,
         border: OutlineInputBorder(
@@ -524,8 +531,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgLight, // Background toska muda
-      // --- PAKAI DRAWER SENTRAL ---
+      backgroundColor: AppColors.bgLight, 
       drawer: const SizedBox(
         width: 260,
         child: AdminDrawer(activeMenu: "Manage Shifts"),
@@ -536,18 +542,17 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
         centerTitle: true,
         iconTheme: const IconThemeData(
           color: Colors.black87,
-        ), // Icon back hitam
+        ), 
         title: const Text(
           "Manage Shifts",
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
         ),
         actions: [
-          // TOMBOL SHARE KE WA
           IconButton(
             icon: const Icon(
               Icons.share,
               color: AppColors.primary,
-            ), // Icon toska
+            ), 
             onPressed: _shareSchedule,
             tooltip: "Bagikan Jadwal",
           ),
@@ -555,7 +560,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primary, // Toska
+        backgroundColor: AppColors.primary, 
         onPressed: _showAddShiftSheet,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text(
@@ -575,7 +580,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.primary, // Kotak header toska solid
+                      color: AppColors.primary, 
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -668,7 +673,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                                             fontSize: 16,
                                             color: Colors.black87,
                                           ),
-                                        ), // Teks hitam
+                                        ), 
                                         const SizedBox(height: 4),
                                         Row(
                                           children: [
@@ -676,7 +681,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                                               Icons.calendar_today,
                                               size: 14,
                                               color: AppColors.primary,
-                                            ), // Toska
+                                            ), 
                                             const SizedBox(width: 4),
                                             Text(
                                               "${shift['tanggal']}",
@@ -685,7 +690,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                                                 fontWeight: FontWeight.bold,
                                                 fontSize: 13,
                                               ),
-                                            ), // Toska
+                                            ), 
                                           ],
                                         ),
                                         const SizedBox(height: 4),
@@ -704,7 +709,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w600,
                                               ),
-                                            ), // Nama kasir lebih jelas
+                                            ), 
                                           ],
                                         ),
                                         const SizedBox(height: 4),
@@ -788,7 +793,7 @@ class _ManageShiftsScreenState extends State<ManageShiftsScreen> {
                                                   ),
                                                 ),
                                               ],
-                                            ), // Merah
+                                            ), 
                                           ),
                                         ],
                                       ),
