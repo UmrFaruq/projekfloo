@@ -34,13 +34,14 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
     try {
       final catResponse = await supabase.from('ms_category_product').select('id, category_name');
 
+      // 🔥 KODINGAN BERSIH TANPA KOMENTAR DI DALAM SELECT 🔥
       final prodResponse = await supabase
           .from('ms_product')
           .select('''
             id, 
             name_product, 
             qty, 
-            qty_gudang,  -- 🔥 AMBIL DATA GUDANG JUGA 🔥
+            qty_gudang, 
             unit, 
             image_url, 
             category_id, 
@@ -59,7 +60,7 @@ class _ManageStockScreenState extends State<ManageStockScreen> {
     } catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
-        _showSnackBar("Gagal mengambil data dari server", isError: true);
+        _showSnackBar("Gagal mengambil data dari server: $e", isError: true);
       }
     }
   }

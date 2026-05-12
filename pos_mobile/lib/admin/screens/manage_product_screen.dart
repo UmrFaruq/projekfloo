@@ -282,7 +282,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                     ),
                     const SizedBox(height: 12),
                     _buildTextField(
-                      "URL Gambar",
+                      "URL Gambar (Opsional)",
                       Icons.image_outlined,
                       imageController,
                       TextInputType.url,
@@ -341,20 +341,29 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                           ),
                         ),
                         onPressed: () {
-                          if (nameController.text.isEmpty) return;
+                          // 🔥 SATPAM VALIDASI: CEK JIKA ADA YANG KOSONG 🔥
+                          if (nameController.text.trim().isEmpty ||
+                              purchasePriceController.text.trim().isEmpty ||
+                              sellingPriceController.text.trim().isEmpty ||
+                              qtyController.text.trim().isEmpty ||
+                              unitController.text.trim().isEmpty) {
+                            
+                            // Tutup modal dulu biar snackbarnya kelihatan jelas
+                            Navigator.pop(context);
+                            _showSnackBar("Gagal disimpan! Semua kolom (kecuali URL Gambar) wajib diisi bosku!", isError: true);
+                            return;
+                          }
+
                           Map<String, dynamic> data = {
-                            'name_product': nameController.text,
-                            'purchase_price':
-                                int.tryParse(purchasePriceController.text) ?? 0,
-                            'selling_price':
-                                int.tryParse(sellingPriceController.text) ?? 0,
-                            'qty': int.tryParse(qtyController.text) ?? 0,
-                            'unit': unitController.text,
+                            'name_product': nameController.text.trim(),
+                            'purchase_price': int.tryParse(purchasePriceController.text.trim()) ?? 0,
+                            'selling_price': int.tryParse(sellingPriceController.text.trim()) ?? 0,
+                            'qty': int.tryParse(qtyController.text.trim()) ?? 0,
+                            'unit': unitController.text.trim(),
                             'category_id': selectedCategoryId,
-                            'image_url': imageController.text.isEmpty
-                                ? null
-                                : imageController.text,
+                            'image_url': imageController.text.trim().isEmpty ? null : imageController.text.trim(),
                           };
+                          
                           _saveProduct(
                             data,
                             id: isEdit ? produkYangDiedit['id'] : null,

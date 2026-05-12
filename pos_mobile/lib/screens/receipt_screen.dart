@@ -5,7 +5,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart'; 
 import '../data/cart_data.dart';
 import '../data/order_data.dart';
-import '../models/order.dart';
+  import '../models/order.dart';
 import '../theme/colors.dart';
 import 'sales_screen.dart';
 
@@ -88,9 +88,27 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     return items;
   }
 
+  // 🔥 KALKULASI LOKAL SAKTI: CEK PAYMENT METHOD 🔥
+  Map<String, int> _kalkulasiBiaya(int subtotal, String currentMethod) {
+    int tax = (subtotal * globalTaxRate).toInt();
+    int total = subtotal + tax;
+    int rounding = 0;
+
+    bool isCash = currentMethod.toLowerCase() == 'cash' || currentMethod.toLowerCase() == 'tunai';
+
+    if (globalIsRounding && isCash) {
+      int sisa = total % 100;
+      if (sisa > 0) {
+        rounding = sisa;
+        total -= rounding;
+      }
+    }
+
+    return {'tax': tax, 'rounding': rounding, 'total': total};
+  }
+
   void saveOrder() {
-    // 🔥 PAKE MESIN HITUNG SAKTI 🔥
-    final kalkulasi = hitungFinal(getSubtotal());
+    final kalkulasi = _kalkulasiBiaya(getSubtotal(), widget.paymentMethod);
     
     List<Map<String, dynamic>> orderItems = [];
     for (var item in cart) {
@@ -114,7 +132,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
   Future<void> _printReceipt() async {
     final pdf = pw.Document();
     final mergedItems = getMergedItems();
-    final kalkulasi = hitungFinal(getSubtotal()); // 🔥 PAKE MESIN HITUNG SAKTI 🔥
+    final kalkulasi = _kalkulasiBiaya(getSubtotal(), widget.paymentMethod);
 
     pdf.addPage(
       pw.Page(
@@ -154,7 +172,6 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
 
               pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text("Subtotal", style: const pw.TextStyle(fontSize: 10)), pw.Text(formatRupiah(getSubtotal()), style: const pw.TextStyle(fontSize: 10))]),
               
-              // 🔥 PDF PAJAK DINAMIS 🔥
               pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text("$globalTaxName (${(globalTaxRate * 100).toInt()}%)", style: const pw.TextStyle(fontSize: 10)), pw.Text(formatRupiah(kalkulasi['tax']!), style: const pw.TextStyle(fontSize: 10))]),
               
               if (globalIsRounding && kalkulasi['rounding']! > 0) ...[
@@ -171,7 +188,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                 ],
               ),
 
-              if (widget.paymentMethod.toLowerCase() == "cash" && widget.amountPaid != null) ...[
+              if ((widget.paymentMethod.toLowerCase() == "cash" || widget.paymentMethod.toLowerCase() == "tunai") && widget.amountPaid != null) ...[
                 pw.SizedBox(height: 4),
                 pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text("Tunai", style: const pw.TextStyle(fontSize: 10)), pw.Text(formatRupiah(widget.amountPaid!), style: const pw.TextStyle(fontSize: 10))]),
                 pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [pw.Text("Kembalian", style: const pw.TextStyle(fontSize: 10)), pw.Text(formatRupiah(widget.amountPaid! - kalkulasi['total']!), style: const pw.TextStyle(fontSize: 10))]),
@@ -195,7 +212,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
   @override
   Widget build(BuildContext context) {
     final mergedItems = getMergedItems();
-    final kalkulasi = hitungFinal(getSubtotal()); // 🔥 PAKE MESIN HITUNG SAKTI 🔥
+    final kalkulasi = _kalkulasiBiaya(getSubtotal(), widget.paymentMethod); 
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
@@ -254,18 +271,17 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
                         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("Subtotal", style: TextStyle(fontSize: 13, color: Colors.black87)), Text(formatRupiah(getSubtotal()), style: const TextStyle(fontSize: 13, color: Colors.black87))]),
                         const SizedBox(height: 6),
                         
-                        // 🔥 UI PAJAK DINAMIS 🔥
                         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text("$globalTaxName (${(globalTaxRate * 100).toInt()}%)", style: const TextStyle(fontSize: 13, color: Colors.black87)), Text(formatRupiah(kalkulasi['tax']!), style: const TextStyle(fontSize: 13, color: Colors.black87))]),
                         
                         if (globalIsRounding && kalkulasi['rounding']! > 0) ...[
                           const SizedBox(height: 6),
-                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("Pembulatan", style: TextStyle(fontSize: 13, color: Colors.grey)), Text("- ${formatRupiah(kalkulasi['rounding']!)}", style: const TextStyle(fontSize: 13, color: Colors.grey))]),
+                          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("Pembulatan", style: TextStyle(fontSize: 13, color: Colors.black87)), Text("- ${formatRupiah(kalkulasi['rounding']!)}", style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87))]),
                         ],
 
                         const SizedBox(height: 10),
                         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("TOTAL", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)), Text(formatRupiah(kalkulasi['total']!), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87))]),
 
-                        if (widget.paymentMethod.toLowerCase() == "cash" && widget.amountPaid != null) ...[
+                        if ((widget.paymentMethod.toLowerCase() == "cash" || widget.paymentMethod.toLowerCase() == "tunai") && widget.amountPaid != null) ...[
                           const SizedBox(height: 10),
                           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text("Tunai", style: TextStyle(fontSize: 13, color: Colors.black87)), Text(formatRupiah(widget.amountPaid!), style: const TextStyle(fontSize: 13, color: Colors.black87))]),
                           const SizedBox(height: 4),

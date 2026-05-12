@@ -131,8 +131,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return items;
   }
 
+  // 🔥 KALKULASI SAKTI: HANYA MEMBULATKAN JIKA CASH 🔥
+  Map<String, int> _kalkulasiBiaya(int subtotal, String currentMethod) {
+    int tax = (subtotal * globalTaxRate).toInt();
+    int total = subtotal + tax;
+    int rounding = 0;
+
+    bool isCash = currentMethod.toLowerCase() == 'cash' || currentMethod.toLowerCase() == 'tunai';
+
+    if (globalIsRounding && isCash) {
+      int sisa = total % 100;
+      if (sisa > 0) {
+        rounding = sisa;
+        total -= rounding;
+      }
+    }
+
+    return {'tax': tax, 'rounding': rounding, 'total': total};
+  }
+
   Future<void> _prosesTransaksiSupabase() async {
-    final kalkulasi = hitungFinal(getSubtotal());
+    final kalkulasi = _kalkulasiBiaya(getSubtotal(), paymentMethod);
     int totalBayar = kalkulasi['total']!;
     int totalPajak = kalkulasi['tax']!;
     
@@ -231,7 +250,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final mergedItems = getMergedItems();
-    final kalkulasi = hitungFinal(getSubtotal()); 
+    // Gunakan fungsi kalkulasi lokal yang peka terhadap paymentMethod
+    final kalkulasi = _kalkulasiBiaya(getSubtotal(), paymentMethod); 
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
@@ -316,14 +336,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   ],
                 ),
                 
-                // 🔥 UI PEMBULATAN DI-UPDATE SESUAI REQUEST BOSKU 🔥
+                // Pembulatan akan sembunyi otomatis kalau pilih QRIS/BRI
                 if (globalIsRounding && kalkulasi['rounding']! > 0) ...[
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text("Pembulatan", style: TextStyle(color: Colors.black87)), // Warna hitam
-                      Text("- ${formatRupiah(kalkulasi['rounding']!)}", style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)), // Bold & Hitam
+                      const Text("Pembulatan", style: TextStyle(color: Colors.black87)), 
+                      Text("- ${formatRupiah(kalkulasi['rounding']!)}", style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
                     ],
                   ),
                 ],
@@ -368,7 +388,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       activeColor: AppColors.primary,
                       title: Text(method.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
                       secondary: Icon(iconData, color: AppColors.primary),
-                      onChanged: (value) => setState(() => paymentMethod = value!),
+                      onChanged: (value) {
+                        setState(() {
+                          paymentMethod = value!;
+                          // Reset uang tunai dan kembalian pas ganti metode
+                          cashController.clear();
+                          _kembalian = 0;
+                        });
+                      },
                     );
                   }).toList(),
                 ),
@@ -429,7 +456,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
-                      // 🔥 VALIDASI: WAJIB ISI NAMA PELANGGAN UNTUK CASH 🔥
                       onPressed: _isLoading ? null : () {
                         if (customerController.text.trim().isEmpty) {
                           showWarningPopup(context, "Data Belum Lengkap", "Silakan masukkan nama customer terlebih dahulu sebelum memproses pembayaran.");
