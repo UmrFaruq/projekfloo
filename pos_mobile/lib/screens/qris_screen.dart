@@ -53,7 +53,7 @@ class _QRISScreenState extends State<QRISScreen> {
     return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
   }
 
-  // 🔥 FUNGSI SIMPAN KE SUPABASE (SAMA SEPERTI CASH) 🔥
+  // 🔥 FUNGSI SIMPAN KE SUPABASE 🔥
   Future<void> _prosesTransaksiQris() async {
     setState(() => _isLoading = true);
 
@@ -95,7 +95,7 @@ class _QRISScreenState extends State<QRISScreen> {
         'subtotal': subtotal,
         'tax': tax,
         'total': widget.total,
-        'payment_method': 'qris', // CATAT SEBAGAI QRIS
+        'payment_method': widget.paymentMethod.toLowerCase(), // 🔥 DINAMIS SESUAI PILIHAN (bukan statis qris lagi)
         'created_at': DateTime.now().toIso8601String(),
       }).select('id').single();
 
@@ -119,11 +119,11 @@ class _QRISScreenState extends State<QRISScreen> {
 
         // Catat Mutasi Keluar
         await supabase.from('tr_stock').insert({
-          'user_id': userId,         // 🔥 INI YANG KETINGGALAN BOSKU!
+          'user_id': userId,         
           'product_id': item.id,
           'type': 'out',
           'qty': item.qty,
-          'description': 'Penjualan QRIS - Invoice: $invoiceNo',
+          'description': 'Penjualan ${widget.paymentMethod.toUpperCase()} - Invoice: $invoiceNo', // 🔥 DINAMIS DI AUDIT STOK
         });
       }
       
@@ -137,8 +137,9 @@ class _QRISScreenState extends State<QRISScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => ReceiptScreen(
+              amountPaid: widget.total, // Biasanya butuh ini biar error nggak merah di receipt
               customer: widget.customer,
-              paymentMethod: widget.paymentMethod,
+              paymentMethod: widget.paymentMethod, // Tetep dibawa ke layar struk
             ),
           ),
         );
@@ -157,7 +158,8 @@ class _QRISScreenState extends State<QRISScreen> {
         backgroundColor: AppColors.bgLight,
         elevation: 0,
         centerTitle: true,
-        title: const Text("QRIS Payment", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        // 🔥 TITLE APPBAR DINAMIS 🔥
+        title: Text("${widget.paymentMethod.toUpperCase()} Payment", style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: SafeArea(
@@ -167,9 +169,10 @@ class _QRISScreenState extends State<QRISScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 10),
-              const Text("Scan QR Code", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.black87)),
+              // 🔥 INSTRUKSI LAYAR DINAMIS 🔥
+              Text("Scan Barcode ${widget.paymentMethod.toUpperCase()}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.black87)),
               const SizedBox(height: 8),
-              const Text("Arahkan kamera atau aplikasi e-wallet Anda ke QR Code di bawah ini untuk membayar.", textAlign: TextAlign.center, style: TextStyle(color: AppColors.textGrey, fontSize: 14)),
+              const Text("Arahkan kamera atau aplikasi e-wallet Anda ke Barcode di bawah ini untuk membayar.", textAlign: TextAlign.center, style: TextStyle(color: AppColors.textGrey, fontSize: 14)),
               const SizedBox(height: 40),
 
               Container(
@@ -180,7 +183,7 @@ class _QRISScreenState extends State<QRISScreen> {
                   boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 10))],
                 ),
                 child: QrImageView(
-                  data: "POS_PAYMENT_${widget.total}", 
+                  data: "POS_PAYMENT_${widget.total}_${widget.paymentMethod}", // Isian Barcodenya juga saya bedain biar logis
                   size: 220,
                   foregroundColor: AppColors.primaryDark, 
                 ),
@@ -204,7 +207,7 @@ class _QRISScreenState extends State<QRISScreen> {
                     backgroundColor: AppColors.primary, 
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
-                  onPressed: _isLoading ? null : _prosesTransaksiQris, // PANGGIL FUNGSI SUPABASE
+                  onPressed: _isLoading ? null : _prosesTransaksiQris, 
                   child: _isLoading 
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text("Konfirmasi Pembayaran", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),

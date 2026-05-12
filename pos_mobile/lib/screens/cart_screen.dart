@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; 
 import '../data/cart_data.dart';
-import '../theme/colors.dart'; // Menggunakan AppColors
+import '../theme/colors.dart'; 
 import 'checkout_screen.dart';
 
 class CartScreen extends StatefulWidget {
@@ -12,12 +12,11 @@ class CartScreen extends StatefulWidget {
 }
 
 class _CartScreenState extends State<CartScreen> {
-  // Fungsi format Rupiah (titik otomatis)
   String formatRupiah(int amount) {
     return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
   }
 
-  int getTotal() {
+  int getSubtotal() {
     int total = 0;
     for (var item in cart) {
       total += item.price * item.qty;
@@ -28,26 +27,19 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgLight, // Tema background toska muda
+      backgroundColor: AppColors.bgLight, 
       appBar: AppBar(
         elevation: 0,
         backgroundColor: AppColors.bgLight,
-        title: const Text(
-          "Keranjang",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold), // Teks Hitam Tegas
-        ),
-        iconTheme: const IconThemeData(color: Colors.black87), // Icon kembali warna hitam
+        title: const Text("Keranjang", style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.black87), 
       ),
       body: cart.isEmpty
           ? const Center(
-              child: Text(
-                "Keranjang masih kosong",
-                style: TextStyle(color: AppColors.textGrey, fontSize: 16),
-              ),
+              child: Text("Keranjang masih kosong", style: TextStyle(color: AppColors.textGrey, fontSize: 16)),
             )
           : Column(
               children: [
-                /// CART LIST
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16),
@@ -69,7 +61,7 @@ class _CartScreenState extends State<CartScreen> {
                               width: 60,
                               height: 60,
                               decoration: BoxDecoration(
-                                color: AppColors.bgLight.withOpacity(0.5), // Background image toska muda
+                                color: AppColors.bgLight.withOpacity(0.5), 
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: ClipRRect(
@@ -84,7 +76,6 @@ class _CartScreenState extends State<CartScreen> {
                                     : const Icon(Icons.fastfood, color: AppColors.textGrey),
                               ),
                             ),
-
                             const SizedBox(width: 12),
 
                             /// PRODUCT INFO
@@ -94,22 +85,13 @@ class _CartScreenState extends State<CartScreen> {
                                 children: [
                                   Text(
                                     item.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Colors.black87, // Teks nama produk Hitam
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     formatRupiah(item.price), 
-                                    style: const TextStyle(
-                                      color: AppColors.textGrey, // Teks harga abu-abu toska
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    style: const TextStyle(color: AppColors.textGrey, fontSize: 12, fontWeight: FontWeight.w600),
                                   ),
                                 ],
                               ),
@@ -117,13 +99,9 @@ class _CartScreenState extends State<CartScreen> {
 
                             /// QTY CONTROLLER
                             Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.bgLight, // Background kotak QTY toska muda
-                                borderRadius: BorderRadius.circular(20),
-                              ),
+                              decoration: BoxDecoration(color: AppColors.bgLight, borderRadius: BorderRadius.circular(20)),
                               child: Row(
                                 children: [
-                                  /// MINUS
                                   IconButton(
                                     icon: const Icon(Icons.remove, size: 18, color: Colors.black87),
                                     onPressed: () {
@@ -137,11 +115,7 @@ class _CartScreenState extends State<CartScreen> {
                                       });
                                     },
                                   ),
-                                  Text(
-                                    "${item.qty}",
-                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
-                                  ),
-                                  /// PLUS
+                                  Text("${item.qty}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
                                   IconButton(
                                     icon: const Icon(Icons.add, size: 18, color: Colors.black87),
                                     onPressed: () {
@@ -157,7 +131,7 @@ class _CartScreenState extends State<CartScreen> {
 
                             /// DELETE
                             IconButton(
-                              icon: const Icon(Icons.delete_outline, color: AppColors.error), // Icon hapus warna error
+                              icon: const Icon(Icons.delete_outline, color: AppColors.error), 
                               onPressed: () {
                                 setState(() {
                                   cart.removeAt(index);
@@ -172,66 +146,42 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                 ),
 
-                /// TOTAL + CHECKOUT
+                /// SUBTOTAL + CHECKOUT
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4))
-                    ]
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4))]
                   ),
                   child: Column(
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            "Total",
-                            style: TextStyle(fontSize: 16, color: AppColors.textGrey, fontWeight: FontWeight.bold),
-                          ),
+                          const Text("Subtotal", style: TextStyle(fontSize: 16, color: AppColors.textGrey, fontWeight: FontWeight.bold)), // 🔥 UDAH DIGANTI JADI SUBTOTAL
                           Text(
-                            formatRupiah(getTotal()), 
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87, // Total harga warna hitam tegas
-                            ),
+                            formatRupiah(getSubtotal()), 
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
                           ),
                         ],
                       ),
                       const SizedBox(height: 16),
 
-                      /// CHECKOUT BUTTON (TOSKA SOLID)
                       SizedBox(
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary, // Warna utama Toska
+                            backgroundColor: AppColors.primary, 
                             foregroundColor: Colors.white, 
                             elevation: 2, 
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const CheckoutScreen(),
-                              ),
-                            );
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const CheckoutScreen()));
                           },
-                          child: const Text(
-                            "Checkout",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2, 
-                            ),
-                          ),
+                          child: const Text("Checkout", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
                         ),
                       )
                     ],

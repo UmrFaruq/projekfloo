@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT SUPABASE DITAMBAHKAN
 import '../services/session_service.dart';
 import '../theme/colors.dart';
 import '../data/shift_data.dart';
@@ -13,6 +14,29 @@ import 'login_screen.dart';
 class CashierDrawer extends StatelessWidget {
   final String activeMenu;
   const CashierDrawer({super.key, required this.activeMenu});
+
+  // 🔥 FUNGSI NARIK NAMA ASLI DARI TABEL ms_user 🔥
+  Future<String> fetchUserName() async {
+    try {
+      if (SessionService.userId == null) {
+        return SessionService.username ?? 'Cashier';
+      }
+
+      final supabase = Supabase.instance.client;
+      final response = await supabase
+          .from('ms_user')
+          .select('name')
+          .eq('id', SessionService.userId!)
+          .maybeSingle();
+
+      if (response != null && response['name'] != null) {
+        return response['name'].toString(); // Mengembalikan nama asli
+      }
+    } catch (e) {
+      debugPrint("Gagal narik nama user di drawer: $e");
+    }
+    return SessionService.username ?? 'Cashier';
+  }
 
   // Fungsi warning lokal khusus untuk drawer
   void _showWarning(BuildContext context, String title, String message) {
@@ -81,13 +105,27 @@ class CashierDrawer extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      SessionService.username ?? 'Cashier',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
+                    // 🔥 IMPLEMENTASI FUTURE BUILDER DI SINI 🔥
+                    FutureBuilder<String>(
+                      future: fetchUserName(),
+                      builder: (context, snapshot) {
+                        String displayName = SessionService.username ?? 'Cashier';
+                        
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          displayName = "..."; // Muncul titik-titik saat loading
+                        } else if (snapshot.hasData) {
+                          displayName = snapshot.data!;
+                        }
+
+                        return Text(
+                          displayName,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        );
+                      },
                     ),
                     Text(
                       SessionService.role ?? 'Cashier',

@@ -26,17 +26,21 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {       // KODINGAN BARU (Yang Benar)
+      onTap: () {
+        // 🔥 UPDATE LOGIKA TAMBAH KE KERANJANG 🔥
+        // Kita masukkan semua data, termasuk link IMAGE-nya bosku!
         cart.add(
           CartItem(
-            id: product.id, // <--- TAMBAHKAN BARIS INI BOSKU!
+            id: product.id,
             name: product.name,
             price: product.price,
-            // (biarkan sisanya tetap sama)
+            image: product.image, // <--- INI KUNCI BIAR GAMBAR MUNCUL DI KERANJANG!
+            qty: 1, // Default tambah 1
           ),
         );
 
         updateCart();
+        
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -93,14 +97,11 @@ class ProductCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             
-            // ==========================================
-            // NAMA PRODUK
-            // ==========================================
             Text(
               product.name,
               style: const TextStyle(
                 fontWeight: FontWeight.bold, 
-                fontSize: 15, // <-- GANTI UKURAN NAMA PRODUK DI SINI (Awalnya 14)
+                fontSize: 15, 
                 color: Colors.black87
               ),
               maxLines: 2,
@@ -111,26 +112,20 @@ class ProductCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // ==========================================
-                // TEKS STOK
-                // ==========================================
                 Text(
                   "Stok: ${product.qty}", 
                   style: const TextStyle(
-                    fontSize: 12, // <-- GANTI UKURAN STOK DI SINI (Awalnya 11)
+                    fontSize: 12, 
                     color: Colors.grey, 
                     fontWeight: FontWeight.w600
                   )
                 ),
                 
-                // ==========================================
-                // TEKS HARGA
-                // ==========================================
                 Text(
                   formatRupiah(product.price),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold, 
-                    fontSize: 14, // <-- GANTI UKURAN HARGA DI SINI (Awalnya 13)
+                    fontSize: 14, 
                     color: AppColors.primary
                   ),
                 ),

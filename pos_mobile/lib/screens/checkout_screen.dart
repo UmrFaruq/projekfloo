@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; 
-import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT SUPABASE
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../data/cart_data.dart';
 import '../theme/colors.dart';
 import 'qris_screen.dart';
-import 'receipt_screen.dart'; // <-- IMPORT RECEIPT
+import 'receipt_screen.dart';
 
-// --- FUNGSI GLOBAL UNTUK POP-UP WARNING ---
 void showWarningPopup(BuildContext context, String title, String message) {
   showDialog(
     context: context,
@@ -40,11 +39,52 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final TextEditingController customerController = TextEditingController();
-  final TextEditingController cashController = TextEditingController(); // <-- Input Uang Tunai
+  final TextEditingController cashController = TextEditingController(); 
   
   String paymentMethod = "cash";
   int _kembalian = 0;
-  bool _isLoading = false; // <-- Indikator Loading Supabase
+  bool _isLoading = false; 
+
+  bool _isLoadingMethods = true; 
+  List<String> _paymentMethods = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPaymentMethods();
+  }
+
+  // 🔥 FUNGSI FETCH DENGAN FILTER SOFT DELETE 🔥
+  Future<void> _fetchPaymentMethods() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final response = await supabase
+          .from('ms_payment_method')
+          .select('method_name') // Sesuai kolom di admin
+          .filter('deleted_at', 'is', null); // Biar 'Kredit' yg dihapus gak muncul
+
+      if (mounted) {
+        setState(() {
+          _paymentMethods = (response as List).map((e) => e['method_name'].toString()).toList();
+          
+          if (_paymentMethods.isNotEmpty) {
+            bool hasCash = _paymentMethods.any((m) => m.toLowerCase() == 'cash' || m.toLowerCase() == 'tunai');
+            paymentMethod = hasCash ? 'cash' : _paymentMethods.first.toLowerCase();
+          }
+          _isLoadingMethods = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Gagal narik metode pembayaran: $e");
+      if (mounted) {
+        setState(() {
+          _paymentMethods = ['Cash', 'QRIS'];
+          paymentMethod = 'cash';
+          _isLoadingMethods = false;
+        });
+      }
+    }
+  }
 
   String formatRupiah(int amount) {
     return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
@@ -76,7 +116,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return items;
   }
 
-  // 🔥 JURUS PAMUNGKAS: SIMPAN TRANSAKSI KE SUPABASE 🔥
   Future<void> _prosesTransaksiSupabase() async {
     int totalBayar = getTotal();
     int uangTunai = int.tryParse(cashController.text) ?? 0;
@@ -91,7 +130,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     try {
       final supabase = Supabase.instance.client;
 
-      // 1. Cek Shift Aktif
       final shiftData = await supabase.from('tr_shift').select('id, user_id').eq('status', 'open').maybeSingle();
       if (shiftData == null) {
         throw Exception("Shift belum dibuka! Buka shift dulu di dashboard.");
@@ -99,7 +137,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final String shiftId = shiftData['id'];
       final String userId = shiftData['user_id'];
 
-      // 2. Cek/Buat Customer
       String? customerId;
       final String custName = customerController.text.trim();
       if (custName.isNotEmpty) {
@@ -112,7 +149,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
       }
 
-      // 3. Simpan Kepala Struk (tr_sales)
       final String invoiceNo = 'INV-${DateTime.now().millisecondsSinceEpoch}';
       final salesRes = await supabase.from('tr_sales').insert({
         'no_invoice': invoiceNo,
@@ -122,13 +158,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'subtotal': getSubtotal(),
         'tax': getTax(),
         'total': totalBayar,
-        'payment_method': paymentMethod, // 🔥 SIMPAN JENIS PEMBAYARAN
+        'payment_method': paymentMethod, 
         'created_at': DateTime.now().toIso8601String(),
       }).select('id').single();
 
       final String salesId = salesRes['id'];
 
-      // 4. Simpan Detail Belanjaan (tr_sales_details), POTONG STOK & CATAT KE tr_stock
       List<Map<String, dynamic>> details = [];
       for (var item in cart) {
         details.add({
@@ -139,7 +174,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'subtotal': item.price * item.qty,
         });
 
-        // 🔥 LOGIKA BARU: POTONG STOK REAL-TIME 🔥
         final productData = await supabase.from('ms_product').select('qty').eq('id', item.id).single();
         int currentStock = productData['qty'] ?? 0;
         
@@ -147,29 +181,26 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           'qty': currentStock - item.qty
         }).eq('id', item.id);
 
-        // 🔥 TAMBAHAN BARU: CATAT RIWAYAT STOK (tr_stock) LENGKAP DENGAN USER ID 🔥
         await supabase.from('tr_stock').insert({
-          'user_id': userId,           // <-- INI YANG BIKIN GAK ERROR LAGI
+          'user_id': userId,          
           'product_id': item.id,
-          'type': 'out',               // Status barang keluar
+          'type': 'out',              
           'qty': item.qty,
-          'description': 'Penjualan Kasir (Tunai) - Invoice: $invoiceNo',
+          'description': 'Penjualan Kasir (${paymentMethod.toUpperCase()}) - Invoice: $invoiceNo',
         });
       }
       
-      // Masukkan semua data belanjaan ke tabel detail
       await supabase.from('tr_sales_details').insert(details);
 
       setState(() => _isLoading = false);
 
-      // 5. Sukses! Lanjut ke Struk
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => ReceiptScreen(
               amountPaid: uangTunai,
-              paymentMethod: "cash",
+              paymentMethod: paymentMethod, 
               customer: custName.isEmpty ? 'Pelanggan Umum' : custName,
             ),
           ),
@@ -196,7 +227,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ... CUSTOMER & ORDER SUMMARY ...
           const Text("Customer", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
           const SizedBox(height: 8),
           TextField(
@@ -289,31 +319,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))]
             ),
-            child: Column(
-              children: [
-                RadioListTile(
-                  value: "cash",
-                  groupValue: paymentMethod,
-                  activeColor: AppColors.primary,
-                  title: const Text("Cash", style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
-                  secondary: const Icon(Icons.payments_outlined, color: AppColors.primary),
-                  onChanged: (value) => setState(() => paymentMethod = value!),
+            child: _isLoadingMethods 
+              ? const Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                )
+              : Column(
+                  children: _paymentMethods.map((method) {
+                    String methodLower = method.toLowerCase();
+                    IconData iconData = Icons.account_balance_wallet;
+                    
+                    if (methodLower == 'cash' || methodLower == 'tunai') iconData = Icons.payments_outlined;
+                    if (methodLower == 'qris') iconData = Icons.qr_code_2;
+
+                    return RadioListTile<String>(
+                      value: methodLower,
+                      groupValue: paymentMethod.toLowerCase(),
+                      activeColor: AppColors.primary,
+                      title: Text(method.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
+                      secondary: Icon(iconData, color: AppColors.primary),
+                      onChanged: (value) => setState(() => paymentMethod = value!),
+                    );
+                  }).toList(),
                 ),
-                RadioListTile(
-                  value: "qris",
-                  groupValue: paymentMethod,
-                  activeColor: AppColors.primary,
-                  title: const Text("QRIS", style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
-                  secondary: const Icon(Icons.qr_code_2, color: AppColors.primary),
-                  onChanged: (value) => setState(() => paymentMethod = value!),
-                ),
-              ],
-            ),
           ),
           const SizedBox(height: 24),
 
-          // --- FORM BAYAR TUNAI ---
-          if (paymentMethod == "cash")
+          if (paymentMethod.toLowerCase() == "cash" || paymentMethod.toLowerCase() == "tunai")
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -375,7 +407,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               ),
             ),
             
-          if (paymentMethod == "qris")
+          if (paymentMethod.toLowerCase() != "cash" && paymentMethod.toLowerCase() != "tunai")
             SizedBox(
               width: double.infinity,
               height: 55, 
@@ -386,7 +418,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 ),
                 onPressed: () {
                   if (customerController.text.trim().isEmpty) {
-                    showWarningPopup(context, "Data Belum Lengkap", "Silakan masukkan nama customer terlebih dahulu sebelum membayar dengan QRIS.");
+                    showWarningPopup(context, "Data Belum Lengkap", "Silakan masukkan nama customer terlebih dahulu sebelum memproses pembayaran.");
                     return;
                   }
                   Navigator.push(
@@ -395,12 +427,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       builder: (_) => QRISScreen(
                         total: getTotal(),
                         customer: customerController.text,
-                        paymentMethod: paymentMethod,
+                        paymentMethod: paymentMethod.toUpperCase(),
                       ),
                     ),
                   );
                 },
-                child: const Text("Bayar dengan QRIS", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                child: Text("Bayar dengan ${paymentMethod.toUpperCase()}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
               ),
             ),
           const SizedBox(height: 40),

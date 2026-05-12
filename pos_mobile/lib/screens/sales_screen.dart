@@ -61,6 +61,7 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   Future<void> _fetchDataFromSupabase() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
     try {
       final supabase = Supabase.instance.client;
@@ -77,7 +78,6 @@ class _SalesScreenState extends State<SalesScreen> {
       // 2. Tarik Data Produk
       final productResponse = await supabase
           .from('ms_product')
-          // PASTIKAN NAMA KOLOM INI SAMA PERSIS DENGAN YANG ADA DI SUPABASE BOSKU
           .select('id, name_product, selling_price, qty, unit, image_url, ms_category_product (category_name)')
           .eq('is_active', true);
 
@@ -94,22 +94,23 @@ class _SalesScreenState extends State<SalesScreen> {
             name: prod['name_product']?.toString() ?? 'Tanpa Nama', 
             price: _safeInt(prod['selling_price']), 
             category: catName, 
-            image: prod['image_url']?.toString(), 
+            image: prod['image_url']?.toString(), // 🔥 LINK GAMBAR DIAMBIL DARI SUPABASE
             qty: _safeInt(prod['qty']),
             unit: prod['unit']?.toString() ?? 'pcs',
           ),
         );
       }
 
-      setState(() {
-        databaseCategories = fetchedCategories;
-        databaseProducts = fetchedProducts;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() => isLoading = false);
       if (mounted) {
-        // ERROR DIBUAT MUNCUL JELAS BIAR KITA TAHU KALAU ADA KOLOM YANG SALAH
+        setState(() {
+          databaseCategories = fetchedCategories;
+          databaseProducts = fetchedProducts;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Gagal tarik data: $e"), 
@@ -185,7 +186,10 @@ class _SalesScreenState extends State<SalesScreen> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.shopping_cart_outlined, size: 28, color: Colors.black87),
-                            onPressed: () async => await Navigator.push(context, MaterialPageRoute(builder: (context) => const CartScreen())),
+                            onPressed: () async {
+                              await Navigator.push(context, MaterialPageRoute(builder: (context) => const CartScreen()));
+                              setState(() {}); // Refresh UI saat kembali dari keranjang
+                            },
                           ),
                           Positioned(
                             right: 4, top: 4,
@@ -258,7 +262,7 @@ class _SalesScreenState extends State<SalesScreen> {
               ),
               const SizedBox(height: 16),
               
-              // --- GRID PRODUK (DENGAN PULL-TO-REFRESH) ---
+              // --- GRID PRODUK ---
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _fetchDataFromSupabase,
@@ -271,7 +275,7 @@ class _SalesScreenState extends State<SalesScreen> {
                           ],
                         )
                       : GridView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(), // Biar selalu bisa di-pull ke bawah
+                          physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           itemCount: filteredProducts.length,
                           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -280,7 +284,12 @@ class _SalesScreenState extends State<SalesScreen> {
                             mainAxisSpacing: 14, 
                             childAspectRatio: 0.72
                           ),
-                          itemBuilder: (context, index) => ProductCard(product: filteredProducts[index]),
+                          itemBuilder: (context, index) {
+                            return ProductCard(
+                              product: filteredProducts[index],
+                              // Kirim fungsi refresh kalau diperlukan
+                            );
+                          },
                         ),
                 ),
               ),

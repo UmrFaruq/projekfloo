@@ -97,6 +97,31 @@ class DashboardScreen extends StatelessWidget {
 class DashboardHeader extends StatelessWidget {
   const DashboardHeader({super.key});
 
+  // 🔥 FUNGSI NARIK NAMA ASLI DARI TABEL ms_user 🔥
+  Future<String> fetchUserName() async {
+    try {
+      // Pastikan userId tidak null
+      if (SessionService.userId == null) {
+        return SessionService.username ?? 'Kasir';
+      }
+
+      final supabase = Supabase.instance.client;
+      final response = await supabase
+          .from('ms_user')
+          .select('name')
+          .eq('id', SessionService.userId!)
+          .maybeSingle();
+
+      if (response != null && response['name'] != null) {
+        return response['name'].toString(); // Mengembalikan nama asli
+      }
+    } catch (e) {
+      debugPrint("Gagal narik nama user: $e");
+    }
+    // Fallback kalau gagal narik data
+    return SessionService.username ?? 'Kasir';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -133,13 +158,27 @@ class DashboardHeader extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-        Text(
-          "Hello, ${SessionService.username ?? 'Kasir'} 👋",
-          style: const TextStyle(
-            fontSize: 26,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
+        // 🔥 IMPLEMENTASI FUTURE BUILDER 🔥
+        FutureBuilder<String>(
+          future: fetchUserName(),
+          builder: (context, snapshot) {
+            String displayName = SessionService.username ?? 'Kasir'; // Default
+            
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              displayName = "..."; // Muncul titik-titik pas lagi loading
+            } else if (snapshot.hasData) {
+              displayName = snapshot.data!;
+            }
+
+            return Text(
+              "Hello, $displayName 👋",
+              style: const TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            );
+          },
         ),
       ],
     );
