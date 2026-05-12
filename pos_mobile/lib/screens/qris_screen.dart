@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:intl/intl.dart'; 
-import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT SUPABASE
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 import '../theme/colors.dart'; 
-import '../data/cart_data.dart'; // <-- IMPORT KERANJANG
+import '../data/cart_data.dart'; 
 import 'receipt_screen.dart';
 
-// --- FUNGSI GLOBAL UNTUK POP-UP WARNING ---
 void showWarningPopup(BuildContext context, String title, String message) {
   showDialog(
     context: context,
@@ -31,7 +30,7 @@ void showWarningPopup(BuildContext context, String title, String message) {
 }
 
 class QRISScreen extends StatefulWidget {
-  final int total;
+  final int total; // Ini udah total yang dibulatkan dari Checkout
   final String customer;
   final String paymentMethod;
 
@@ -47,27 +46,24 @@ class QRISScreen extends StatefulWidget {
 }
 
 class _QRISScreenState extends State<QRISScreen> {
-  bool _isLoading = false; // Indikator Loading
+  bool _isLoading = false; 
 
   String formatRupiah(int amount) {
     return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
   }
 
-  // 🔥 FUNGSI SIMPAN KE SUPABASE 🔥
   Future<void> _prosesTransaksiQris() async {
     setState(() => _isLoading = true);
 
     try {
       final supabase = Supabase.instance.client;
 
-      // 1. Cek Shift
       final shiftData = await supabase.from('tr_shift').select('id, user_id').eq('status', 'open').limit(1).maybeSingle();
       if (shiftData == null) throw Exception("Shift belum dibuka!");
       
       final String shiftId = shiftData['id'];
       final String userId = shiftData['user_id'];
 
-      // 2. Customer
       String? customerId;
       if (widget.customer.isNotEmpty) {
         final existingCust = await supabase.from('ms_customer').select('id').eq('name', widget.customer).limit(1).maybeSingle();
@@ -79,12 +75,13 @@ class _QRISScreenState extends State<QRISScreen> {
         }
       }
 
-      // 3. Simpan Kepala Struk
+      // 🔥 HITUNG ULANG PAKAI MESIN SAKTI BIAR PAJAKNYA PRESISI 🔥
       int subtotal = 0;
       for (var item in cart) {
         subtotal += (item.price * item.qty).toInt();
       }
-      int tax = (subtotal * 0.12).round();
+      final kalkulasi = hitungFinal(subtotal);
+      
       final String invoiceNo = 'INV-${DateTime.now().millisecondsSinceEpoch}';
 
       final salesRes = await supabase.from('tr_sales').insert({
@@ -93,15 +90,14 @@ class _QRISScreenState extends State<QRISScreen> {
         'customer_id': customerId,
         'shift_id': shiftId,
         'subtotal': subtotal,
-        'tax': tax,
-        'total': widget.total,
-        'payment_method': widget.paymentMethod.toLowerCase(), // 🔥 DINAMIS SESUAI PILIHAN (bukan statis qris lagi)
+        'tax': kalkulasi['tax']!, // Pake pajak dari mesin sakti
+        'total': kalkulasi['total']!, // Pake total bulat dari mesin sakti
+        'payment_method': widget.paymentMethod.toLowerCase(), 
         'created_at': DateTime.now().toIso8601String(),
       }).select('id').single();
 
       final String salesId = salesRes['id'];
 
-      // 4. Detail Belanjaan, Potong Stok ms_product & Catat Mutasi tr_stock
       List<Map<String, dynamic>> details = [];
       for (var item in cart) {
         details.add({
@@ -112,18 +108,16 @@ class _QRISScreenState extends State<QRISScreen> {
           'subtotal': item.price * item.qty,
         });
 
-        // Potong stok
         final pData = await supabase.from('ms_product').select('qty').eq('id', item.id).limit(1).single();
         int currentStock = pData['qty'] ?? 0;
         await supabase.from('ms_product').update({'qty': currentStock - item.qty}).eq('id', item.id);
 
-        // Catat Mutasi Keluar
         await supabase.from('tr_stock').insert({
           'user_id': userId,         
           'product_id': item.id,
           'type': 'out',
           'qty': item.qty,
-          'description': 'Penjualan ${widget.paymentMethod.toUpperCase()} - Invoice: $invoiceNo', // 🔥 DINAMIS DI AUDIT STOK
+          'description': 'Penjualan ${widget.paymentMethod.toUpperCase()} - Invoice: $invoiceNo', 
         });
       }
       
@@ -131,15 +125,14 @@ class _QRISScreenState extends State<QRISScreen> {
 
       setState(() => _isLoading = false);
 
-      // 5. Pindah ke Struk
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => ReceiptScreen(
-              amountPaid: widget.total, // Biasanya butuh ini biar error nggak merah di receipt
+              amountPaid: kalkulasi['total']!, 
               customer: widget.customer,
-              paymentMethod: widget.paymentMethod, // Tetep dibawa ke layar struk
+              paymentMethod: widget.paymentMethod, 
             ),
           ),
         );
@@ -158,7 +151,6 @@ class _QRISScreenState extends State<QRISScreen> {
         backgroundColor: AppColors.bgLight,
         elevation: 0,
         centerTitle: true,
-        // 🔥 TITLE APPBAR DINAMIS 🔥
         title: Text("${widget.paymentMethod.toUpperCase()} Payment", style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
@@ -169,7 +161,6 @@ class _QRISScreenState extends State<QRISScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 10),
-              // 🔥 INSTRUKSI LAYAR DINAMIS 🔥
               Text("Scan Barcode ${widget.paymentMethod.toUpperCase()}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24, color: Colors.black87)),
               const SizedBox(height: 8),
               const Text("Arahkan kamera atau aplikasi e-wallet Anda ke Barcode di bawah ini untuk membayar.", textAlign: TextAlign.center, style: TextStyle(color: AppColors.textGrey, fontSize: 14)),
@@ -183,7 +174,7 @@ class _QRISScreenState extends State<QRISScreen> {
                   boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 10))],
                 ),
                 child: QrImageView(
-                  data: "POS_PAYMENT_${widget.total}_${widget.paymentMethod}", // Isian Barcodenya juga saya bedain biar logis
+                  data: "POS_PAYMENT_${widget.total}_${widget.paymentMethod}", 
                   size: 220,
                   foregroundColor: AppColors.primaryDark, 
                 ),

@@ -58,10 +58,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   // Controller buat ngebaca ketikan username dan password
   final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController =
-      TextEditingController(); // <-- TAMBAHAN BARU
-
+  final TextEditingController _passwordController = TextEditingController(); 
+  
   bool _isLoading = false; // <-- INDIKATOR LOADING
+  bool _isObscure = true;  // 🔥 VARIABEL BARU BUAT MATA PASSWORD 🔥
 
   // 🔥 FUNGSI LOGIN SUNGGUHAN KE SUPABASE 🔥
   Future<void> _loginToSupabase() async {
@@ -256,11 +256,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
 
                     TextField(
-                      controller:
-                          _passwordController, // <-- PASANG CONTROLLER PASSWORD
-                      obscureText: true,
+                      controller: _passwordController, 
+                      obscureText: _isObscure, // 🔥 PAKAI VARIABEL MATA 🔥
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.lock_outline),
+                        
+                        // 🔥 TAMBAHAN ICON MATA DI SINI 🔥
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isObscure ? Icons.visibility_off : Icons.visibility,
+                            color: Colors.grey,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isObscure = !_isObscure; // Ganti status saat diklik
+                            });
+                          },
+                        ),
+                        
                         hintText: '••••••••',
                         filled: true,
                         fillColor: AppColors.bgLight.withOpacity(0.5),

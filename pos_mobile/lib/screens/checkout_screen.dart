@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; 
 import 'package:intl/intl.dart'; 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -52,16 +53,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   void initState() {
     super.initState();
     _fetchPaymentMethods();
+    _fetchTaxSettings(); 
   }
 
-  // 🔥 FUNGSI FETCH DENGAN FILTER SOFT DELETE 🔥
+  Future<void> _fetchTaxSettings() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final res = await supabase.from('ms_setting').select();
+      
+      for (var item in res) {
+        if (item['key_name'] == 'tax_name') globalTaxName = item['key_value'].toString();
+        if (item['key_name'] == 'tax_rate') globalTaxRate = double.parse(item['key_value'].toString()) / 100;
+        if (item['key_name'] == 'is_rounding') globalIsRounding = item['key_value'].toString() == 'true';
+      }
+      
+      if (mounted) setState(() {}); 
+    } catch (e) {
+      debugPrint("Gagal load setting pajak: $e");
+    }
+  }
+
   Future<void> _fetchPaymentMethods() async {
     try {
       final supabase = Supabase.instance.client;
       final response = await supabase
           .from('ms_payment_method')
-          .select('method_name') // Sesuai kolom di admin
-          .filter('deleted_at', 'is', null); // Biar 'Kredit' yg dihapus gak muncul
+          .select('method_name') 
+          .filter('deleted_at', 'is', null); 
 
       if (mounted) {
         setState(() {
@@ -98,9 +116,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return subtotal;
   }
 
-  int getTax() => (getSubtotal() * 0.12).round();
-  int getTotal() => getSubtotal() + getTax();
-
   Map<String, Map<String, int>> getMergedItems() {
     Map<String, Map<String, int>> items = {};
     for (var item in cart) {
@@ -117,8 +132,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _prosesTransaksiSupabase() async {
-    int totalBayar = getTotal();
-    int uangTunai = int.tryParse(cashController.text) ?? 0;
+    final kalkulasi = hitungFinal(getSubtotal());
+    int totalBayar = kalkulasi['total']!;
+    int totalPajak = kalkulasi['tax']!;
+    
+    String cleanCash = cashController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    int uangTunai = int.tryParse(cleanCash) ?? 0;
 
     if (uangTunai < totalBayar) {
       showWarningPopup(context, "Uang Kurang", "Nominal uang tunai tidak cukup bosku!");
@@ -131,9 +150,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final supabase = Supabase.instance.client;
 
       final shiftData = await supabase.from('tr_shift').select('id, user_id').eq('status', 'open').maybeSingle();
-      if (shiftData == null) {
-        throw Exception("Shift belum dibuka! Buka shift dulu di dashboard.");
-      }
+      if (shiftData == null) throw Exception("Shift belum dibuka! Buka shift dulu di dashboard.");
+      
       final String shiftId = shiftData['id'];
       final String userId = shiftData['user_id'];
 
@@ -156,8 +174,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'customer_id': customerId,
         'shift_id': shiftId,
         'subtotal': getSubtotal(),
-        'tax': getTax(),
-        'total': totalBayar,
+        'tax': totalPajak, 
+        'total': totalBayar, 
         'payment_method': paymentMethod, 
         'created_at': DateTime.now().toIso8601String(),
       }).select('id').single();
@@ -177,9 +195,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         final productData = await supabase.from('ms_product').select('qty').eq('id', item.id).single();
         int currentStock = productData['qty'] ?? 0;
         
-        await supabase.from('ms_product').update({
-          'qty': currentStock - item.qty
-        }).eq('id', item.id);
+        await supabase.from('ms_product').update({'qty': currentStock - item.qty}).eq('id', item.id);
 
         await supabase.from('tr_stock').insert({
           'user_id': userId,          
@@ -215,6 +231,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final mergedItems = getMergedItems();
+    final kalkulasi = hitungFinal(getSubtotal()); 
 
     return Scaffold(
       backgroundColor: AppColors.bgLight,
@@ -294,16 +311,29 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Tax (12%)", style: TextStyle(color: Colors.black87)),
-                    Text(formatRupiah(getTax()), style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
+                    Text("$globalTaxName (${(globalTaxRate * 100).toInt()}%)", style: const TextStyle(color: Colors.black87)),
+                    Text(formatRupiah(kalkulasi['tax']!), style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)),
                   ],
                 ),
+                
+                // 🔥 UI PEMBULATAN DI-UPDATE SESUAI REQUEST BOSKU 🔥
+                if (globalIsRounding && kalkulasi['rounding']! > 0) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Pembulatan", style: TextStyle(color: Colors.black87)), // Warna hitam
+                      Text("- ${formatRupiah(kalkulasi['rounding']!)}", style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.black87)), // Bold & Hitam
+                    ],
+                  ),
+                ],
+                
                 const Divider(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text("Total", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
-                    Text(formatRupiah(getTotal()), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primaryDark)),
+                    Text(formatRupiah(kalkulasi['total']!), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppColors.primaryDark)),
                   ],
                 )
               ],
@@ -361,10 +391,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                   TextField(
                     controller: cashController,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly, CurrencyFormatInputFormatter()],
                     onChanged: (val) {
                       setState(() {
-                        int bayar = int.tryParse(val) ?? 0;
-                        _kembalian = bayar - getTotal();
+                        String cleanVal = val.replaceAll(RegExp(r'[^0-9]'), '');
+                        int bayar = int.tryParse(cleanVal) ?? 0;
+                        _kembalian = bayar - kalkulasi['total']!; 
                       });
                     },
                     decoration: InputDecoration(
@@ -397,7 +429,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
-                      onPressed: _isLoading ? null : _prosesTransaksiSupabase,
+                      // 🔥 VALIDASI: WAJIB ISI NAMA PELANGGAN UNTUK CASH 🔥
+                      onPressed: _isLoading ? null : () {
+                        if (customerController.text.trim().isEmpty) {
+                          showWarningPopup(context, "Data Belum Lengkap", "Silakan masukkan nama customer terlebih dahulu sebelum memproses pembayaran.");
+                          return;
+                        }
+                        _prosesTransaksiSupabase();
+                      },
                       child: _isLoading 
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text("Selesaikan Pembayaran", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
@@ -425,7 +464,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => QRISScreen(
-                        total: getTotal(),
+                        total: kalkulasi['total']!, 
                         customer: customerController.text,
                         paymentMethod: paymentMethod.toUpperCase(),
                       ),
@@ -439,5 +478,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ],
       ),
     );
+  }
+}
+
+class CurrencyFormatInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    if (newValue.selection.baseOffset == 0) return newValue;
+    String cleanText = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (cleanText.isEmpty) return newValue.copyWith(text: '');
+    final int value = int.parse(cleanText);
+    final formatter = NumberFormat.currency(locale: 'id_ID', symbol: '', decimalDigits: 0);
+    String newText = formatter.format(value).trim();
+    return newValue.copyWith(text: newText, selection: TextSelection.collapsed(offset: newText.length));
   }
 }

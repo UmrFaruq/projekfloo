@@ -3,14 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../theme/colors.dart'; // MENGGUNAKAN AppColors
+import '../../theme/colors.dart'; 
 import 'manage_product_screen.dart';
 import 'manage_category_screen.dart';
 import 'manage_cashier_screen.dart';
 import 'manage_payment_screen.dart';
-
-// --- IMPORT FILE DRAWER ADMIN SENTRAL ---
 import 'admin_drawer.dart';
+
+// 🔥 IMPORT HALAMAN SETTING YANG BARU KITA BUAT 🔥
+import 'admin_settings_screen.dart'; 
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -21,9 +22,6 @@ class AdminDashboardScreen extends StatefulWidget {
 
 class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   int jumlahKasirAktif = 0;
-
-  // --- VARIABEL UNTUK PAJAK (TAX) ---
-  double currentTax = 11.0;
 
   // --- VARIABEL UNTUK FILTER DASHBOARD ---
   String filterWaktu = "Hari Ini";
@@ -50,7 +48,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     });
   }
 
-  // --- FUNGSI MENGHITUNG JUMLAH KASIR DARI SUPABASE ---
   Future<void> _hitungKasirAktif() async {
     try {
       final response = await Supabase.instance.client
@@ -97,7 +94,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
       for (int i = 0; i < sales.length; i++) {
         final total = double.tryParse(sales[i]['total'].toString()) ?? 0;
-
         chartData.add(FlSpot(i.toDouble(), total));
       }
 
@@ -125,17 +121,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
       if (mounted) {
         setState(() {
-          txtOmzet =
-              "Rp ${NumberFormat('#,###', 'id_ID').format(omzet.toInt())}";
-
+          txtOmzet = "Rp ${NumberFormat('#,###', 'id_ID').format(omzet.toInt())}";
           txtTransaksi = sales.length.toString();
-
           totalProdukMenipis = lowStockCount;
-
           salesSpots = chartData;
-
           activityList = List<Map<String, dynamic>>.from(activities);
-
           lastUpdate = DateFormat('HH:mm').format(DateTime.now());
         });
       }
@@ -144,112 +134,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  // --- FUNGSI MUNCULIN POPUP PAJAK ---
-  void _showTaxSettingDialog() {
-    TextEditingController taxController = TextEditingController(
-      text: currentTax.toString(),
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.percent, color: AppColors.primary), // Toska
-            SizedBox(width: 8),
-            Text(
-              "Atur Pajak (Tax)",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: Colors.black87,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Masukkan persentase pajak yang akan diterapkan pada transaksi kasir.",
-              style: TextStyle(color: AppColors.textGrey, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: taxController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              style: const TextStyle(
-                color: Colors.black87,
-                fontWeight: FontWeight.bold,
-              ),
-              decoration: InputDecoration(
-                labelText: "Besaran Pajak",
-                labelStyle: const TextStyle(color: AppColors.textGrey),
-                suffixText: "%",
-                suffixStyle: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Batal",
-              style: TextStyle(
-                color: AppColors.textGrey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary, // Toska
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onPressed: () {
-              setState(() {
-                currentTax = double.tryParse(taxController.text) ?? currentTax;
-              });
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("Pajak berhasil diubah menjadi $currentTax%"),
-                  backgroundColor: AppColors.primary,
-                ),
-              );
-            },
-            child: const Text(
-              "Simpan",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgLight, // Background toska muda
-      // --- MENGGUNAKAN DRAWER SENTRAL ---
+      backgroundColor: AppColors.bgLight, 
       drawer: const SizedBox(
         width: 260,
         child: AdminDrawer(activeMenu: "Dashboard"),
@@ -265,11 +153,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 children: [
                   Builder(
                     builder: (context) => IconButton(
-                      icon: const Icon(
-                        Icons.menu,
-                        size: 28,
-                        color: Colors.black87,
-                      ), // Hitam
+                      icon: const Icon(Icons.menu, size: 28, color: Colors.black87),
                       onPressed: () {
                         Scaffold.of(context).openDrawer();
                       },
@@ -284,7 +168,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
-                      ), // Hitam
+                      ),
                       Text(
                         "Super Admin",
                         style: TextStyle(
@@ -296,13 +180,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   Row(
                     children: [
+                      // 🔥 TOMBOL SETTING YANG SUDAH DI-UPDATE 🔥
                       IconButton(
                         icon: const Icon(
-                          Icons.percent,
+                          Icons.settings_outlined, // Iconnya saya ganti jadi roda gigi biar elegan
                           color: AppColors.primary,
-                        ), // Toska
-                        tooltip: "Atur Pajak",
-                        onPressed: _showTaxSettingDialog,
+                        ), 
+                        tooltip: "Pengaturan POS",
+                        onPressed: () {
+                          // Arahkan ke Halaman AdminSettingsScreen
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const AdminSettingsScreen()),
+                          );
+                        },
                       ),
                       const SizedBox(width: 8),
                       Container(
@@ -311,7 +202,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         decoration: BoxDecoration(
                           color: AppColors.primaryDark,
                           borderRadius: BorderRadius.circular(10),
-                        ), // Toska gelap
+                        ), 
                         child: const Icon(Icons.person, color: Colors.white),
                       ),
                     ],
@@ -334,7 +225,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           setState(() {
                             filterWaktu = value;
                           });
-
                           await _fetchDashboardData();
                         },
                         shape: RoundedRectangleBorder(
@@ -343,66 +233,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         itemBuilder: (context) => [
                           const PopupMenuItem(
                             value: "Hari Ini",
-                            child: Text(
-                              "Hari Ini",
-                              style: TextStyle(color: Colors.black87),
-                            ),
+                            child: Text("Hari Ini", style: TextStyle(color: Colors.black87)),
                           ),
                           const PopupMenuItem(
                             value: "Minggu Ini",
-                            child: Text(
-                              "Minggu Ini",
-                              style: TextStyle(color: Colors.black87),
-                            ),
+                            child: Text("Minggu Ini", style: TextStyle(color: Colors.black87)),
                           ),
                           const PopupMenuItem(
                             value: "Bulan Ini",
-                            child: Text(
-                              "Bulan Ini",
-                              style: TextStyle(color: Colors.black87),
-                            ),
+                            child: Text("Bulan Ini", style: TextStyle(color: Colors.black87)),
                           ),
                         ],
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
                             children: [
-                              const Icon(
-                                Icons.calendar_today,
-                                size: 14,
-                                color: AppColors.textGrey,
-                              ),
+                              const Icon(Icons.calendar_today, size: 14, color: AppColors.textGrey),
                               const SizedBox(width: 6),
                               Text(
                                 filterWaktu,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black87,
-                                ),
-                              ), // Hitam
-                              const Icon(
-                                Icons.arrow_drop_down,
-                                size: 16,
-                                color: Colors.black87,
-                              ),
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+                              ), 
+                              const Icon(Icons.arrow_drop_down, size: 16, color: Colors.black87),
                             ],
                           ),
                         ),
                       ),
                       Text(
                         "Last Update: Hari ini, $lastUpdate",
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textGrey,
-                        ),
+                        style: const TextStyle(fontSize: 11, color: AppColors.textGrey),
                       ),
                     ],
                   ),
@@ -415,22 +278,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       Expanded(
                         child: Column(
                           children: [
-                            // Warna pakai standar AppColors
                             _buildMainStatCard(
-                              "Omzet $filterWaktu",
-                              txtOmzet,
-                              "+12% tren naik",
-                              Icons.payments,
-                              AppColors.primary,
+                              "Omzet $filterWaktu", txtOmzet, "+12% tren naik", Icons.payments, AppColors.primary,
                             ),
                             const SizedBox(height: 12),
                             _buildMainStatCard(
-                              "Perlu Restock",
-                              "$totalProdukMenipis Produk",
-                              "Stok menipis",
-                              Icons.inventory_2,
-                              AppColors.error,
-                            ), // Warning pakai merah
+                              "Perlu Restock", "$totalProdukMenipis Produk", "Stok menipis", Icons.inventory_2, AppColors.error,
+                            ),
                           ],
                         ),
                       ),
@@ -439,19 +293,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                         child: Column(
                           children: [
                             _buildSmallStatCard(
-                              "Transaksi",
-                              txtTransaksi,
-                              "Sukses diproses",
-                              Icons.receipt_long,
-                              AppColors.primary,
+                              "Transaksi", txtTransaksi, "Sukses diproses", Icons.receipt_long, AppColors.primary,
                             ),
                             const SizedBox(height: 12),
                             _buildSmallStatCard(
-                              "Kasir Aktif",
-                              "$jumlahKasirAktif Kasir",
-                              "Terdaftar di sistem",
-                              Icons.people,
-                              AppColors.primary,
+                              "Kasir Aktif", "$jumlahKasirAktif Kasir", "Terdaftar di sistem", Icons.people, AppColors.primary,
                             ),
                           ],
                         ),
@@ -462,14 +308,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   const SizedBox(height: 24),
 
                   // --- GRAFIK PLACEHOLDER ---
-                  const Text(
-                    "Omzet Penjualan",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black87,
-                    ),
-                  ),
+                  const Text("Omzet Penjualan", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
                   const SizedBox(height: 10),
                   Container(
                     height: 220,
@@ -477,43 +316,18 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
                     ),
                     child: salesSpots.isEmpty
-                        ? const Center(
-                            child: Text(
-                              "Belum ada data grafik",
-                              style: TextStyle(color: AppColors.textGrey),
-                            ),
-                          )
+                        ? const Center(child: Text("Belum ada data grafik", style: TextStyle(color: AppColors.textGrey)))
                         : LineChart(
                             LineChartData(
                               gridData: FlGridData(show: true),
                               titlesData: FlTitlesData(
-                                leftTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    reservedSize: 40,
-                                  ),
-                                ),
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    reservedSize: 30,
-                                  ),
-                                ),
-                                rightTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                topTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
+                                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40)),
+                                bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30)),
+                                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                               ),
                               borderData: FlBorderData(show: false),
                               lineBarsData: [
@@ -532,109 +346,42 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   const SizedBox(height: 24),
 
                   // --- QUICK ACTIONS ---
-                  const Text(
-                    "Quick Actions",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black87,
-                    ),
-                  ),
+                  const Text("Quick Actions", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
                   const SizedBox(height: 12),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: _buildQuickActionBtn(
-                          "Manage\nProducts",
-                          Icons.inventory_2_outlined,
-                          () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ManageProductScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                      Expanded(child: _buildQuickActionBtn("Manage\nProducts", Icons.inventory_2_outlined, () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageProductScreen()));
+                      })),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildQuickActionBtn(
-                          "Manage\nCashiers",
-                          Icons.people_outline,
-                          () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ManageCashierScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                      Expanded(child: _buildQuickActionBtn("Manage\nCashiers", Icons.people_outline, () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageCashierScreen()));
+                      })),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildQuickActionBtn(
-                          "Manage\nCategories",
-                          Icons.category_outlined,
-                          () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ManageCategoryScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                      Expanded(child: _buildQuickActionBtn("Manage\nCategories", Icons.category_outlined, () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ManageCategoryScreen()));
+                      })),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildQuickActionBtn(
-                          "Payment\nMethods",
-                          Icons.payments_outlined,
-                          () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ManagePaymentScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
+                      Expanded(child: _buildQuickActionBtn("Payment\nMethods", Icons.payments_outlined, () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ManagePaymentScreen()));
+                      })),
                     ],
                   ),
 
                   const SizedBox(height: 24),
 
                   // --- AKTIVITAS TERBARU ---
-                  const Text(
-                    "Aktivitas Terbaru",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black87,
-                    ),
-                  ),
+                  const Text("Aktivitas Terbaru", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
                   const SizedBox(height: 10),
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.02),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
                     ),
                     child: activityList.isEmpty
-                        ? const Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Center(child: Text("Belum ada aktivitas")),
-                          )
+                        ? const Padding(padding: EdgeInsets.all(20), child: Center(child: Text("Belum ada aktivitas")))
                         : Column(
                             children: activityList.map((item) {
                               return Column(
@@ -642,19 +389,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                   _buildActivityItem(
                                     Icons.history,
                                     item['action'] ?? '-',
-                                    item['created_at']?.toString().substring(
-                                          0,
-                                          19,
-                                        ) ??
-                                        '-',
+                                    item['created_at']?.toString().substring(0, 19) ?? '-',
                                     item['detail'] ?? '-',
                                     AppColors.primary,
                                   ),
-                                  const Divider(
-                                    height: 1,
-                                    indent: 16,
-                                    endIndent: 16,
-                                  ),
+                                  const Divider(height: 1, indent: 16, endIndent: 16),
                                 ],
                               );
                             }).toList(),
@@ -670,25 +409,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildMainStatCard(
-    String title,
-    String value,
-    String sub,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildMainStatCard(String title, String value, String sub, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -697,48 +424,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             children: [
               Icon(icon, color: color, size: 20),
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.textGrey,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+              Expanded(child: Text(title, style: const TextStyle(color: AppColors.textGrey, fontSize: 12, fontWeight: FontWeight.w600))),
             ],
           ),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-              color: Colors.black87,
-            ),
-          ), // Value Hitam Tegas
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)), 
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(
-                icon == Icons.inventory_2
-                    ? Icons.warning_amber_rounded
-                    : Icons.trending_up,
-                color: color,
-                size: 14,
-              ),
+              Icon(icon == Icons.inventory_2 ? Icons.warning_amber_rounded : Icons.trending_up, color: color, size: 14),
               const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  sub,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+              Expanded(child: Text(sub, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold))),
             ],
           ),
         ],
@@ -746,35 +442,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  Widget _buildSmallStatCard(
-    String title,
-    String value,
-    String sub,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildSmallStatCard(String title, String value, String sub, IconData icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4, offset: const Offset(0, 2))],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
@@ -782,31 +463,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppColors.textGrey,
-                    fontSize: 11,
-                  ),
-                ),
+                Text(title, style: const TextStyle(color: AppColors.textGrey, fontSize: 11)),
                 const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                    color: Colors.black87,
-                  ),
-                ), // Value hitam tegas
+                Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)), 
                 const SizedBox(height: 4),
-                Text(
-                  sub,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text(sub, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -825,84 +486,37 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade100),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.01),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.01), blurRadius: 5, offset: const Offset(0, 2))],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.bgLight,
-                borderRadius: BorderRadius.circular(10),
-              ), // Toska muda
+              decoration: BoxDecoration(color: AppColors.bgLight, borderRadius: BorderRadius.circular(10)), 
               child: Icon(icon, color: AppColors.primary, size: 24),
             ),
             const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                height: 1.2,
-                color: Colors.black87,
-              ), // Teks hitam
-              textAlign: TextAlign.center,
-            ),
+            Text(title, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, height: 1.2, color: Colors.black87), textAlign: TextAlign.center),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActivityItem(
-    IconData icon,
-    String title,
-    String sub,
-    String status,
-    Color statusColor,
-  ) {
+  Widget _buildActivityItem(IconData icon, String title, String sub, String status, Color statusColor) {
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: statusColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
+        decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
         child: Icon(icon, color: statusColor, size: 20),
       ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-      ), // Teks hitam
-      subtitle: Text(
-        sub,
-        style: const TextStyle(fontSize: 11, color: AppColors.textGrey),
-      ),
+      title: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.black87)), 
+      subtitle: Text(sub, style: const TextStyle(fontSize: 11, color: AppColors.textGrey)),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: statusColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          status,
-          style: TextStyle(
-            color: statusColor,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+        child: Text(status, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
       ),
     );
   }
