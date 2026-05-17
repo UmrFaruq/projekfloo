@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -632,14 +633,24 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                           p['image_url'].toString().isNotEmpty)
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Image.network(
-                            p['image_url'],
-                            fit: BoxFit.cover,
-                            errorBuilder: (c, e, s) => const Icon(
-                              Icons.broken_image,
-                              color: AppColors.textGrey,
-                            ),
-                          ),
+                          child:
+                              p['image_url'].toString().startsWith('data:image')
+                              ? Image.memory(
+                                  base64Decode(
+                                    p['image_url'].toString().split(',').last,
+                                  ),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                )
+                              : Image.network(
+                                  p['image_url'],
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(Icons.broken_image),
+                                ),
                         )
                       : const Icon(
                           Icons.inventory_2_outlined,

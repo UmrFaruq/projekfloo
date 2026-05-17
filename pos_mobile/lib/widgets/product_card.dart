@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/product.dart';
@@ -12,15 +13,19 @@ class ProductCard extends StatelessWidget {
 
   // --- ANTI-VIRUS RUPIAH ---
   String formatRupiah(dynamic amount) {
-    int finalAmount = 0; 
+    int finalAmount = 0;
     if (amount != null) {
       if (amount is num) {
-        finalAmount = amount.toInt(); 
+        finalAmount = amount.toInt();
       } else if (amount is String) {
         finalAmount = int.tryParse(amount) ?? 0;
       }
     }
-    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(finalAmount);
+    return NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    ).format(finalAmount);
   }
 
   @override
@@ -34,13 +39,14 @@ class ProductCard extends StatelessWidget {
             id: product.id,
             name: product.name,
             price: product.price,
-            image: product.image, // <--- INI KUNCI BIAR GAMBAR MUNCUL DI KERANJANG!
+            image: product
+                .image, // <--- INI KUNCI BIAR GAMBAR MUNCUL DI KERANJANG!
             qty: 1, // Default tambah 1
           ),
         );
 
         updateCart();
-        
+
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -51,7 +57,11 @@ class ProductCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     "${product.name} masuk keranjang",
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -59,7 +69,9 @@ class ProductCard extends StatelessWidget {
             duration: const Duration(seconds: 2),
             backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
             elevation: 4,
           ),
@@ -70,7 +82,13 @@ class ProductCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,55 +96,85 @@ class ProductCard extends StatelessWidget {
             Expanded(
               child: Container(
                 width: double.infinity,
-                decoration: BoxDecoration(color: AppColors.bgLight.withOpacity(0.3), borderRadius: BorderRadius.circular(14)),
+                decoration: BoxDecoration(
+                  color: AppColors.bgLight.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 child: Center(
                   child: (product.image != null && product.image!.isNotEmpty)
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(14),
-                          child: Image.network(
-                            product.image!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                            errorBuilder: (context, error, stackTrace) => const Icon(Icons.image_not_supported_outlined, color: Colors.red),
-                          ),
+                          child:
+                              product.image != null && product.image!.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: product.image!.startsWith('data:image')
+                                      ? Image.memory(
+                                          base64Decode(
+                                            product.image!.split(',').last,
+                                          ),
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                        )
+                                      : Image.network(
+                                          product.image!,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  const Icon(
+                                                    Icons.broken_image,
+                                                  ),
+                                        ),
+                                )
+                              : const Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: 45,
+                                  color: Colors.grey,
+                                ),
                         )
-                      : const Icon(Icons.inventory_2_outlined, size: 45, color: Colors.grey),
+                      : const Icon(
+                          Icons.inventory_2_outlined,
+                          size: 45,
+                          color: Colors.grey,
+                        ),
                 ),
               ),
             ),
             const SizedBox(height: 12),
-            
+
             Text(
               product.name,
               style: const TextStyle(
-                fontWeight: FontWeight.bold, 
-                fontSize: 15, 
-                color: Colors.black87
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: Colors.black87,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
-            
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Stok: ${product.qty}", 
+                  "Stok: ${product.qty}",
                   style: const TextStyle(
-                    fontSize: 12, 
-                    color: Colors.grey, 
-                    fontWeight: FontWeight.w600
-                  )
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                
+
                 Text(
                   formatRupiah(product.price),
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold, 
-                    fontSize: 14, 
-                    color: AppColors.primary
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppColors.primary,
                   ),
                 ),
               ],
