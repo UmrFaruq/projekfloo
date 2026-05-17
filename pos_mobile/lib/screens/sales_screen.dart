@@ -7,7 +7,7 @@ import '../data/cart_data.dart';
 import 'cart_screen.dart';
 
 // --- IMPORT FILE DRAWER KASIR YANG BARU ---
-import 'cashier_drawer.dart'; 
+import 'cashier_drawer.dart';
 
 void showWarningPopup(BuildContext context, String title, String message) {
   showDialog(
@@ -16,16 +16,32 @@ void showWarningPopup(BuildContext context, String title, String message) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: AppColors.error), 
+          const Icon(Icons.warning_amber_rounded, color: AppColors.error),
           const SizedBox(width: 8),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              color: Colors.black87,
+            ),
+          ),
         ],
       ),
-      content: Text(message, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+      content: Text(
+        message,
+        style: const TextStyle(fontSize: 14, color: Colors.black87),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx),
-          child: const Text("OK", style: TextStyle(color: AppColors.textGrey, fontWeight: FontWeight.bold)),
+          child: const Text(
+            "OK",
+            style: TextStyle(
+              color: AppColors.textGrey,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
       ],
     ),
@@ -67,7 +83,10 @@ class _SalesScreenState extends State<SalesScreen> {
       final supabase = Supabase.instance.client;
 
       // 1. Tarik Data Kategori
-      final categoryResponse = await supabase.from('ms_category_product').select('category_name');
+      final categoryResponse = await supabase
+          .from('ms_category_product')
+          .select('category_name')
+          .isFilter('deleted_at', null);
       List<String> fetchedCategories = ["Semua"];
       for (var cat in categoryResponse) {
         if (cat['category_name'] != null) {
@@ -78,23 +97,27 @@ class _SalesScreenState extends State<SalesScreen> {
       // 2. Tarik Data Produk
       final productResponse = await supabase
           .from('ms_product')
-          .select('id, name_product, selling_price, qty, unit, image_url, ms_category_product (category_name)')
+          .select(
+            'id, name_product, selling_price, qty, unit, image_url, ms_category_product (category_name)',
+          )
           .eq('is_active', true);
 
       List<Product> fetchedProducts = [];
       for (var prod in productResponse) {
         String catName = "Lainnya";
-        if (prod['ms_category_product'] != null && prod['ms_category_product']['category_name'] != null) {
+        if (prod['ms_category_product'] != null &&
+            prod['ms_category_product']['category_name'] != null) {
           catName = prod['ms_category_product']['category_name'];
         }
 
         fetchedProducts.add(
           Product(
-            id: prod['id']?.toString() ?? '', 
-            name: prod['name_product']?.toString() ?? 'Tanpa Nama', 
-            price: _safeInt(prod['selling_price']), 
-            category: catName, 
-            image: prod['image_url']?.toString(), // 🔥 LINK GAMBAR DIAMBIL DARI SUPABASE
+            id: prod['id']?.toString() ?? '',
+            name: prod['name_product']?.toString() ?? 'Tanpa Nama',
+            price: _safeInt(prod['selling_price']),
+            category: catName,
+            image: prod['image_url']
+                ?.toString(), // 🔥 LINK GAMBAR DIAMBIL DARI SUPABASE
             qty: _safeInt(prod['qty']),
             unit: prod['unit']?.toString() ?? 'pcs',
           ),
@@ -113,7 +136,7 @@ class _SalesScreenState extends State<SalesScreen> {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Gagal tarik data: $e"), 
+            content: Text("Gagal tarik data: $e"),
             backgroundColor: AppColors.error,
             duration: const Duration(seconds: 5),
           ),
@@ -124,8 +147,11 @@ class _SalesScreenState extends State<SalesScreen> {
 
   List<Product> getFilteredProducts() {
     return databaseProducts.where((product) {
-      bool matchCategory = selectedCategory == "Semua" || product.category == selectedCategory;
-      bool matchSearch = product.name.toLowerCase().contains(searchQuery.toLowerCase());
+      bool matchCategory =
+          selectedCategory == "Semua" || product.category == selectedCategory;
+      bool matchSearch = product.name.toLowerCase().contains(
+        searchQuery.toLowerCase(),
+      );
       return matchCategory && matchSearch;
     }).toList();
   }
@@ -138,17 +164,17 @@ class _SalesScreenState extends State<SalesScreen> {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white, 
-          borderRadius: BorderRadius.circular(30), 
+          color: isSelected ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(30),
           border: isSelected ? null : Border.all(color: Colors.grey.shade300),
         ),
         child: Text(
-          label, 
+          label,
           style: TextStyle(
-            color: isSelected ? Colors.white : Colors.black87, 
+            color: isSelected ? Colors.white : Colors.black87,
             fontSize: 14,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600
-          )
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -159,10 +185,10 @@ class _SalesScreenState extends State<SalesScreen> {
     final filteredProducts = getFilteredProducts();
 
     return Scaffold(
-      backgroundColor: AppColors.bgLight, 
+      backgroundColor: AppColors.bgLight,
       drawer: const SizedBox(
-        width: 250, 
-        child: CashierDrawer(activeMenu: "Sales") 
+        width: 250,
+        child: CashierDrawer(activeMenu: "Sales"),
       ),
       body: SafeArea(
         child: Column(
@@ -175,35 +201,68 @@ class _SalesScreenState extends State<SalesScreen> {
                 children: [
                   Builder(
                     builder: (context) => IconButton(
-                      icon: const Icon(Icons.menu, size: 28, color: Colors.black87), 
-                      onPressed: () => Scaffold.of(context).openDrawer()
+                      icon: const Icon(
+                        Icons.menu,
+                        size: 28,
+                        color: Colors.black87,
+                      ),
+                      onPressed: () => Scaffold.of(context).openDrawer(),
                     ),
                   ),
-                  const Text("Sales", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  const Text(
+                    "Sales",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
                   Row(
                     children: [
                       Stack(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.shopping_cart_outlined, size: 28, color: Colors.black87),
+                            icon: const Icon(
+                              Icons.shopping_cart_outlined,
+                              size: 28,
+                              color: Colors.black87,
+                            ),
                             onPressed: () async {
-                              await Navigator.push(context, MaterialPageRoute(builder: (context) => const CartScreen()));
-                              setState(() {}); // Refresh UI saat kembali dari keranjang
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const CartScreen(),
+                                ),
+                              );
+                              setState(
+                                () {},
+                              ); // Refresh UI saat kembali dari keranjang
                             },
                           ),
                           Positioned(
-                            right: 4, top: 4,
+                            right: 4,
+                            top: 4,
                             child: ValueListenableBuilder(
                               valueListenable: cartNotifier,
                               builder: (context, value, child) {
                                 if (value == 0) return const SizedBox();
                                 return Container(
                                   padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(color: AppColors.badgeRed, shape: BoxShape.circle),
-                                  constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.badgeRed,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 20,
+                                    minHeight: 20,
+                                  ),
                                   child: Text(
                                     value.toString(),
-                                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                     textAlign: TextAlign.center,
                                   ),
                                 );
@@ -214,21 +273,32 @@ class _SalesScreenState extends State<SalesScreen> {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(12)), 
-                        child: const Icon(Icons.person_outline, color: Colors.white, size: 24),
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.person_outline,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            
+
             // --- SEARCH BAR ---
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 2,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -236,18 +306,22 @@ class _SalesScreenState extends State<SalesScreen> {
                 child: TextField(
                   onChanged: (value) => setState(() => searchQuery = value),
                   decoration: const InputDecoration(
-                    icon: Icon(Icons.search, color: AppColors.textGrey), 
-                    hintText: "Cari produk...", 
+                    icon: Icon(Icons.search, color: AppColors.textGrey),
+                    hintText: "Cari produk...",
                     hintStyle: TextStyle(color: AppColors.textGrey),
-                    border: InputBorder.none
+                    border: InputBorder.none,
                   ),
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            
+
             if (isLoading)
-              const Expanded(child: Center(child: CircularProgressIndicator(color: AppColors.primary)))
+              const Expanded(
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              )
             else ...[
               // --- KATEGORI CHIPS ---
               SizedBox(
@@ -256,12 +330,14 @@ class _SalesScreenState extends State<SalesScreen> {
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
-                    children: databaseCategories.map((catName) => _buildFilterChip(catName)).toList(),
+                    children: databaseCategories
+                        .map((catName) => _buildFilterChip(catName))
+                        .toList(),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // --- GRID PRODUK ---
               Expanded(
                 child: RefreshIndicator(
@@ -271,19 +347,28 @@ class _SalesScreenState extends State<SalesScreen> {
                       ? ListView(
                           children: const [
                             SizedBox(height: 100),
-                            Center(child: Text("Produk tidak ditemukan.", style: TextStyle(color: AppColors.textGrey)))
+                            Center(
+                              child: Text(
+                                "Produk tidak ditemukan.",
+                                style: TextStyle(color: AppColors.textGrey),
+                              ),
+                            ),
                           ],
                         )
                       : GridView.builder(
                           physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          itemCount: filteredProducts.length,
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2, 
-                            crossAxisSpacing: 14, 
-                            mainAxisSpacing: 14, 
-                            childAspectRatio: 0.72
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
                           ),
+                          itemCount: filteredProducts.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 14,
+                                mainAxisSpacing: 14,
+                                childAspectRatio: 0.72,
+                              ),
                           itemBuilder: (context, index) {
                             return ProductCard(
                               product: filteredProducts[index],
