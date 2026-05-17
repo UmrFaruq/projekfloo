@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; // <-- IMPORT SUPABASE
 import '../services/session_service.dart';
 
+import '../data/report_helper.dart';
+import '../models/order.dart';
 import '../theme/colors.dart';
 import '../data/order_data.dart';
 import '../data/shift_data.dart';
@@ -162,7 +164,7 @@ class DashboardHeader extends StatelessWidget {
           future: fetchUserName(),
           builder: (context, snapshot) {
             String displayName = SessionService.username ?? 'Kasir'; // Default
-            
+
             if (snapshot.connectionState == ConnectionState.waiting) {
               displayName = "..."; // Muncul titik-titik pas lagi loading
             } else if (snapshot.hasData) {
@@ -218,6 +220,7 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
           .from('tr_shift')
           .select('id, shift_start, initial_capital')
           .eq('status', 'open')
+          .eq('user_id', SessionService.userId!)
           .maybeSingle();
 
       if (shiftData != null) {
@@ -402,6 +405,7 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                     .from('tr_shift')
                     .select('id')
                     .eq('status', 'open')
+                    .eq('user_id', SessionService.userId!)
                     .maybeSingle();
 
                 if (shiftData != null) {
@@ -613,12 +617,65 @@ class _ShiftSummaryCardState extends State<ShiftSummaryCard> {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () async {
-                        // Fitur Laporan Excel bisa di-update nanti setelah tabel lengkap
-                        showWarningPopup(
-                          context,
-                          "Info",
-                          "Fitur Excel sedang disinkronisasi dengan Supabase.",
-                        );
+                        try {
+                          final supabase = Supabase.instance.client;
+
+                          final sales = await supabase.from('tr_sales').select(
+                            '''
+                                id,
+                                subtotal,
+                                tax,
+                                total,
+                                payment_method,
+                                created_at,
+                                ms_customer(name)
+                              ''',
+                          );
+
+                          List<Order> orders = [];
+
+                          for (var sale in sales) {
+                            orders.add(
+                              Order(
+                                id: sale['id'].toString(),
+
+                                customer: sale['ms_customer'] != null
+                                    ? sale['ms_customer']['name']
+                                    : 'Pelanggan Umum',
+
+                                paymentMethod: sale['payment_method'] ?? 'cash',
+
+                                date: DateTime.parse(sale['created_at']),
+
+                                items: [],
+
+                                subtotal:
+                                    sale['subtotal'] ?? sale['total'] ?? 0,
+
+                                tax: sale['tax'] ?? 0,
+
+                                total: sale['total'] ?? 0,
+                              ),
+                            );
+                          }
+
+                          await ReportHelper.downloadExcel(
+                            orders,
+                            "Dashboard_Report",
+                          );
+
+                          showWarningPopup(
+                            context,
+                            "Berhasil",
+                            "Report berhasil didownload.",
+                          );
+                        } catch (e) {
+                          showWarningPopup(
+                            context,
+                            "Export Gagal",
+                            e.toString(),
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
