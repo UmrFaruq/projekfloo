@@ -1,12 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/services.dart';
 
 // --- IMPORT PATH ---
 import '../../theme/colors.dart'; // MENGGUNAKAN AppColors
 import 'admin_drawer.dart'; // IMPORT DRAWER SENTRAL
 import '../../services/audit_service.dart';
 import '../../services/session_service.dart';
+
+class CurrencyInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    final newText = newValue.text.replaceAll('.', '');
+
+    final number = int.tryParse(newText);
+
+    if (number == null) {
+      return oldValue;
+    }
+
+    final formatted = NumberFormat.decimalPattern('id').format(number);
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
 
 class ManageProductScreen extends StatefulWidget {
   const ManageProductScreen({super.key});
@@ -245,6 +273,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                             Icons.shopping_bag_outlined,
                             purchasePriceController,
                             TextInputType.number,
+                            inputFormatters: [CurrencyInputFormatter()],
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -254,6 +283,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                             Icons.payments_outlined,
                             sellingPriceController,
                             TextInputType.number,
+                            inputFormatters: [CurrencyInputFormatter()],
                           ),
                         ),
                       ],
@@ -267,6 +297,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                             Icons.numbers,
                             qtyController,
                             TextInputType.number,
+                            inputFormatters: [CurrencyInputFormatter()],
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -347,23 +378,43 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
                               sellingPriceController.text.trim().isEmpty ||
                               qtyController.text.trim().isEmpty ||
                               unitController.text.trim().isEmpty) {
-                            
                             // Tutup modal dulu biar snackbarnya kelihatan jelas
                             Navigator.pop(context);
-                            _showSnackBar("Gagal disimpan! Semua kolom (kecuali URL Gambar) wajib diisi bosku!", isError: true);
+                            _showSnackBar(
+                              "Gagal disimpan! Semua kolom (kecuali URL Gambar) wajib diisi bosku!",
+                              isError: true,
+                            );
                             return;
                           }
 
                           Map<String, dynamic> data = {
                             'name_product': nameController.text.trim(),
-                            'purchase_price': int.tryParse(purchasePriceController.text.trim()) ?? 0,
-                            'selling_price': int.tryParse(sellingPriceController.text.trim()) ?? 0,
-                            'qty': int.tryParse(qtyController.text.trim()) ?? 0,
+                            'purchase_price':
+                                int.tryParse(
+                                  purchasePriceController.text
+                                      .replaceAll('.', '')
+                                      .trim(),
+                                ) ??
+                                0,
+                            'selling_price':
+                                int.tryParse(
+                                  sellingPriceController.text
+                                      .replaceAll('.', '')
+                                      .trim(),
+                                ) ??
+                                0,
+                            'qty':
+                                int.tryParse(
+                                  qtyController.text.replaceAll('.', '').trim(),
+                                ) ??
+                                0,
                             'unit': unitController.text.trim(),
                             'category_id': selectedCategoryId,
-                            'image_url': imageController.text.trim().isEmpty ? null : imageController.text.trim(),
+                            'image_url': imageController.text.trim().isEmpty
+                                ? null
+                                : imageController.text.trim(),
                           };
-                          
+
                           _saveProduct(
                             data,
                             id: isEdit ? produkYangDiedit['id'] : null,
@@ -395,8 +446,9 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
     String label,
     IconData icon,
     TextEditingController controller,
-    TextInputType type,
-  ) {
+    TextInputType type, {
+    List<TextInputFormatter>? inputFormatters,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -417,6 +469,7 @@ class _ManageProductScreenState extends State<ManageProductScreen> {
           child: TextField(
             controller: controller,
             keyboardType: type,
+            inputFormatters: inputFormatters,
             style: const TextStyle(
               color: Colors.black87,
               fontWeight: FontWeight.w600,
