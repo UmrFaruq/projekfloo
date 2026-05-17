@@ -58,10 +58,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   // Controller buat ngebaca ketikan username dan password
   final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController(); 
-  
+  final TextEditingController _passwordController = TextEditingController();
+
   bool _isLoading = false; // <-- INDIKATOR LOADING
-  bool _isObscure = true;  // 🔥 VARIABEL BARU BUAT MATA PASSWORD 🔥
+  bool _isObscure = true; // 🔥 VARIABEL BARU BUAT MATA PASSWORD 🔥
 
   // 🔥 FUNGSI LOGIN SUNGGUHAN KE SUPABASE 🔥
   Future<void> _loginToSupabase() async {
@@ -147,44 +147,9 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               /// LOGO
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: AppColors.accent,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Center(
-                  child: Text(
-                    'F',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 40,
-                      fontWeight: FontWeight.w900,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-              ),
+              Image.asset('assets/logo_angkringan_pinang.png', width: 200),
 
-              const SizedBox(height: 16),
-
-              RichText(
-                text: const TextSpan(
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textGrey,
-                  ),
-                  children: [
-                    TextSpan(text: 'Floo'),
-                    TextSpan(text: '.'),
-                    TextSpan(text: 'ID'),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 40),
+              const SizedBox(height: 30),
 
               /// LOGIN CARD
               Container(
@@ -256,24 +221,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 8),
 
                     TextField(
-                      controller: _passwordController, 
+                      controller: _passwordController,
                       obscureText: _isObscure, // 🔥 PAKAI VARIABEL MATA 🔥
                       decoration: InputDecoration(
                         prefixIcon: const Icon(Icons.lock_outline),
-                        
+
                         // 🔥 TAMBAHAN ICON MATA DI SINI 🔥
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _isObscure ? Icons.visibility_off : Icons.visibility,
+                            _isObscure
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                             color: Colors.grey,
                           ),
                           onPressed: () {
                             setState(() {
-                              _isObscure = !_isObscure; // Ganti status saat diklik
+                              _isObscure =
+                                  !_isObscure; // Ganti status saat diklik
                             });
                           },
                         ),
-                        
+
                         hintText: '••••••••',
                         filled: true,
                         fillColor: AppColors.bgLight.withOpacity(0.5),
